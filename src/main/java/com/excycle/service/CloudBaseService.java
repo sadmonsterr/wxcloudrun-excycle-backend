@@ -27,7 +27,7 @@ public class CloudBaseService {
     private static final Logger logger = LoggerFactory.getLogger(CloudBaseService.class);
 
     // WeChat Cloud Base配置信息
-    private static final String WECHAT_API_BASE_URL = "https://api.weixin.qq.com";
+    private static final String WECHAT_API_BASE_URL = "http://api.weixin.qq.com";
 
     private static final String ENV_ID = "excycle-3gude89g2e454ced"; // 需要替换为实际的云开发环境ID
 
@@ -60,7 +60,7 @@ public class CloudBaseService {
             params.put("file_list", fileList);
 
             // 调用微信云API
-            String apiUrl = WECHAT_API_BASE_URL + "/tcb/batchdownloadfile?access_token=" + ACCESS_TOKEN;
+            String apiUrl = WECHAT_API_BASE_URL + "/tcb/batchdownloadfile";
             HttpResponse response = HttpRequest.post(apiUrl)
                     .header("Content-Type", "application/json")
                     .body(JSON.toJSONString(params))
