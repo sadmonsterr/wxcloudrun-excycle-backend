@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title != null ? title + ' - 极循小程序管理系统' : '极循小程序管理系统'}">极循小程序管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap-icons.css}">
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #343a40;
+        }
+        .sidebar .nav-link {
+            color: #fff;
+            padding: 15px 20px;
+        }
+        .sidebar .nav-link:hover {
+            background-color: #495057;
+        }
+        .sidebar .nav-link.active {
+            background-color: #007bff;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+    </style>
+    <th:block th:if="${extraCss != null}">
+        <style th:utext="${extraCss}"></style>
+    </th:block>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-md-3 col-lg-2 sidebar">
+                <div class="d-flex flex-column">
+                    <div class="p-3 text-white">
+                        <h4>管理系统</h4>
+                    </div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" th:classappend="${activeMenu == 'dashboard' ? 'active' : ''}" href="/excycle/index">
+                                <i class="bi bi-speedometer2"></i> 仪表盘
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:classappend="${activeMenu == 'user' ? 'active' : ''}" href="/excycle/user/list">
+                                <i class="bi bi-people"></i> 用户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:classappend="${activeMenu == 'order' ? 'active' : ''}" href="/excycle/order/list">
+                                <i class="bi bi-cart3"></i> 订单管理
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 主要内容 -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <div class="logout-btn">
+                    <a href="/excycle/auth/logout" class="btn btn-outline-danger">
+                        <i class="bi bi-box-arrow-right"></i> 退出登录
+                    </a>
+                </div>
+
+                <!-- 容器内容 -->
+                <div th:replace="${content} :: container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <th:block th:if="${extraJs != null}">
+        <script th:utext="${extraJs}"></script>
+    </th:block>
+</body>
+</html>

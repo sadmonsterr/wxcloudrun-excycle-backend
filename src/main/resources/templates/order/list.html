@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="common :: head">
+    <title>订单管理 - 极循小程序管理系统</title>
+</head>
+<body th:replace="common :: body">
+    <div th:fragment="container">
+        <h2>订单管理</h2>
+
+        <!-- 搜索表单 -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <form th:action="@{/order/list}" method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" name="orderNo" placeholder="订单号" th:value="${order?.orderNo}">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" name="phone" placeholder="联系电话" th:value="${order?.phone}">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-control" name="status">
+                            <option value="">全部状态</option>
+                            <option value="已确认" th:selected="${order?.status == '已确认'}">已确认</option>
+                            <option value="已取消" th:selected="${order?.status == '已取消'}">已取消</option>
+                            <option value="已完成" th:selected="${order?.status == '已完成'}">已完成</option>
+                            <option value="进行中" th:selected="${order?.status == '进行中'}">进行中</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> 搜索
+                        </button>
+                        <a href="/excycle/order/add" class="btn btn-success">
+                            <i class="bi bi-plus"></i> 新增订单
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 订单列表 -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                </th>
+                                <th>ID</th>
+                                <th>订单号</th>
+                                <th>联系电话</th>
+                                <th>状态</th>
+                                <th>上门时间</th>
+                                <th>地址</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="order : ${orderPage.records}">
+                                <td>
+                                    <input type="checkbox" name="selectedIds" th:value="${order.id}" class="order-checkbox">
+                                </td>
+                                <td th:text="${order.id}">1</td>
+                                <td th:text="${order.orderNo}">ORDER001</td>
+                                <td th:text="${order.phone}">13800138000</td>
+                                <td>
+                                    <span th:if="${order.status == '已确认'}" class="badge bg-primary">已确认</span>
+                                    <span th:if="${order.status == '已取消'}" class="badge bg-danger">已取消</span>
+                                    <span th:if="${order.status == '已完成'}" class="badge bg-success">已完成</span>
+                                    <span th:if="${order.status == '进行中'}" class="badge bg-warning">进行中</span>
+                                </td>
+                                <td>
+                                    <div th:if="${order.startTime != null}" th:text="${#temporals.format(order.startTime, 'yyyy-MM-dd HH:mm')}">2023-01-01 10:00</div>
+                                    <div th:if="${order.endTime != null}" th:text="${#temporals.format(order.endTime, 'yyyy-MM-dd HH:mm')}">2023-01-01 12:00</div>
+                                </td>
+                                <td th:text="${order.address}">北京市朝阳区</td>
+                                <td th:text="${#temporals.format(order.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2023-01-01 10:00:00</td>
+                                <td>
+                                    <a th:href="@{/order/view/{id}(id=${order.id})}" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-eye"></i> 查看
+                                    </a>
+                                    <a th:href="@{/order/edit/{id}(id=${order.id})}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i> 编辑
+                                    </a>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                            更新状态
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item"
+                                                   hx-post="/excycle/order/updateStatus"
+                                                   hx-vals='{"id": "${order.id}", "status": "已确认"}'
+                                                   hx-confirm="确认要更新状态为「已确认」吗？"
+                                                   hx-on::after-request="if(event.detail.successful) { alert('状态更新成功'); location.reload(); } else { alert('状态更新失败'); }">
+                                                    已确认
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item"
+                                                   hx-post="/excycle/order/updateStatus"
+                                                   hx-vals='{"id": "${order.id}", "status": "已取消"}'
+                                                   hx-confirm="确认要更新状态为「已取消」吗？"
+                                                   hx-on::after-request="if(event.detail.successful) { alert('状态更新成功'); location.reload(); } else { alert('状态更新失败'); }">
+                                                    已取消
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item"
+                                                   hx-post="/excycle/order/updateStatus"
+                                                   hx-vals='{"id": "${order.id}", "status": "已完成"}'
+                                                   hx-confirm="确认要更新状态为「已完成」吗？"
+                                                   hx-on::after-request="if(event.detail.successful) { alert('状态更新成功'); location.reload(); } else { alert('状态更新失败'); }">
+                                                    已完成
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item"
+                                                   hx-post="/excycle/order/updateStatus"
+                                                   hx-vals='{"id": "${order.id}", "status": "进行中"}'
+                                                   hx-confirm="确认要更新状态为「进行中」吗？"
+                                                   hx-on::after-request="if(event.detail.successful) { alert('状态更新成功'); location.reload(); } else { alert('状态更新失败'); }">
+                                                    进行中
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            hx-delete="/excycle/order/delete/{id}"
+                                            hx-vals='{"id": "${order.id}"}'
+                                            hx-confirm="确定要删除这个订单吗？"
+                                            hx-on::after-request="if(event.detail.successful) { alert('删除成功'); location.reload(); } else { alert('删除失败'); }">
+                                        <i class="bi bi-trash"></i> 删除
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分页 -->
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-danger"
+                                    hx-get="/excycle/order/batchDelete"
+                                    hx-include="[name='selectedIds']"
+                                    hx-confirm="确定要删除选中的订单吗？"
+                                    hx-on::after-request="if(event.detail.successful) { alert('批量删除成功'); location.reload(); } else { alert('批量删除失败'); }">
+                                <i class="bi bi-trash"></i> 批量删除
+                            </button>
+                            <button class="btn btn-primary"
+                                    hx-get="/excycle/order/batchUpdateStatus"
+                                    hx-include="[name='selectedIds']"
+                                    hx-vals='{"status": prompt("请输入新状态（已确认/已取消/已完成/进行中）：") || ""}'
+                                    hx-confirm="确定要批量更新状态吗？"
+                                    hx-on::after-request="if(event.detail.successful) { alert('批量更新状态成功'); location.reload(); } else { alert('批量更新状态失败'); }">
+                                <i class="bi bi-arrow-repeat"></i> 批量更新状态
+                            </button>
+                        </div>
+                    </div>
+                    <nav>
+                        <ul class="pagination">
+                            <li class="page-item" th:classappend="${orderPage.current == 1} ? 'disabled'">
+                                <a class="page-link" th:href="@{/order/list(pageNum=${orderPage.current - 1}, pageSize=${pageSize}, orderNo=${order?.orderNo}, phone=${order?.phone}, status=${order?.status})}">上一页</a>
+                            </li>
+                            <li class="page-item" th:each="i : ${#numbers.sequence(1, orderPage.pages)}" th:classappend="${orderPage.current == i} ? 'active'">
+                                <a class="page-link" th:href="@{/order/list(pageNum=${i}, pageSize=${pageSize}, orderNo=${order?.orderNo}, phone=${order?.phone}, status=${order?.status})}" th:text="${i}">1</a>
+                            </li>
+                            <li class="page-item" th:classappend="${orderPage.current == orderPage.pages} ? 'disabled'">
+                                <a class="page-link" th:href="@{/order/list(pageNum=${orderPage.current + 1}, pageSize=${pageSize}, orderNo=${order?.orderNo}, phone=${order?.phone}, status=${order?.status})}">下一页</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.order-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+        }
+    </script>
+</body>
+</html>

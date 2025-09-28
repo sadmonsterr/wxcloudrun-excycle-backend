@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="common :: head">
+    <title>用户管理 - 极循小程序管理系统</title>
+</head>
+<body th:replace="common :: body">
+    <div th:fragment="container">
+        <h2>用户管理</h2>
+
+        <!-- 搜索表单 -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <form th:action="@{/user/list}" method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" name="phone" placeholder="手机号" th:value="${user?.phone}">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" name="name" placeholder="姓名" th:value="${user?.name}">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> 搜索
+                        </button>
+                        <a href="/excycle/user/add" class="btn btn-success">
+                            <i class="bi bi-plus"></i> 新增用户
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 用户列表 -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                </th>
+                                <th>ID</th>
+                                <th>手机号</th>
+                                <th>姓名</th>
+                                <th>营业执照</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="user : ${userPage.records}">
+                                <td>
+                                    <input type="checkbox" name="selectedIds" th:value="${user.id}" class="user-checkbox">
+                                </td>
+                                <td th:text="${user.id}">1</td>
+                                <td th:text="${user.phone}">13800138000</td>
+                                <td th:text="${user.name}">张三</td>
+                                <td>
+                                    <span th:if="${user.businessLicense != null and !user.businessLicense.isEmpty()}" class="badge bg-success">已上传</span>
+                                    <span th:if="${user.businessLicense == null or user.businessLicense.isEmpty()}" class="badge bg-secondary">未上传</span>
+                                </td>
+                                <td th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2023-01-01 10:00:00</td>
+                                <td>
+                                    <a th:href="@{/user/edit/{id}(id=${user.id})}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i> 编辑
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            hx-delete="/excycle/user/delete/{id}"
+                                            hx-vals='{"id": "${user.id}"}'
+                                            hx-confirm="确定要删除这个用户吗？"
+                                            hx-on::after-request="if(event.detail.successful) { alert('删除成功'); location.reload(); } else { alert('删除失败'); }">
+                                        <i class="bi bi-trash"></i> 删除
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分页 -->
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <button class="btn btn-danger"
+                                hx-get="/excycle/user/batchDelete"
+                                hx-include="[name='selectedIds']"
+                                hx-confirm="确定要删除选中的用户吗？"
+                                hx-on::after-request="if(event.detail.successful) { alert('批量删除成功'); location.reload(); } else { alert('批量删除失败'); }">
+                            <i class="bi bi-trash"></i> 批量删除
+                        </button>
+                    </div>
+                    <nav>
+                        <ul class="pagination">
+                            <li class="page-item" th:classappend="${userPage.current == 1} ? 'disabled'">
+                                <a class="page-link" th:href="@{/user/list(pageNum=${userPage.current - 1}, pageSize=${pageSize}, phone=${user?.phone}, name=${user?.name})}">上一页</a>
+                            </li>
+                            <li class="page-item" th:each="i : ${#numbers.sequence(1, userPage.pages)}" th:classappend="${userPage.current == i} ? 'active'">
+                                <a class="page-link" th:href="@{/user/list(pageNum=${i}, pageSize=${pageSize}, phone=${user?.phone}, name=${user?.name})}" th:text="${i}">1</a>
+                            </li>
+                            <li class="page-item" th:classappend="${userPage.current == userPage.pages} ? 'disabled'">
+                                <a class="page-link" th:href="@{/user/list(pageNum=${userPage.current + 1}, pageSize=${pageSize}, phone=${user?.phone}, name=${user?.name})}">下一页</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.user-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+        }
+    </script>
+</body>
+</html>

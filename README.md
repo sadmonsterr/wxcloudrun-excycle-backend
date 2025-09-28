@@ -1,9 +1,10 @@
-# wxcloudrun-springboot
+# wxcloudrun-excycle-backend
 [![GitHub license](https://img.shields.io/github/license/WeixinCloud/wxcloudrun-express)](https://github.com/WeixinCloud/wxcloudrun-express)
 ![GitHub package.json dependency version (prod)](https://img.shields.io/badge/maven-3.6.0-green)
-![GitHub package.json dependency version (prod)](https://img.shields.io/badge/jdk-11-green)
+![GitHub package.json dependency version (prod)](https://img.shields.io/badge/jdk-8-green)
+![GitHub package.json dependency version (prod)](https://img.shields.io/badge/spring%20boot-2.5.5-green)
 
-微信云托管 Java Springboot 框架模版，实现简单的计数器读写接口，使用云托管 MySQL 读写、记录计数值。
+微信云托管 Java Spring Boot 框架模版，实现 excycle 业务系统，包括用户管理、订单管理、物品管理等完整功能，使用云托管 MySQL 数据库。
 
 ![](https://qcloudimg.tencent-cloud.cn/raw/be22992d297d1b9a1a5365e606276781.png)
 
@@ -41,80 +42,110 @@
 
 ## 服务 API 文档
 
-### `GET /api/count`
+### 用户管理 API
 
-获取当前计数
+#### `GET /api/v1/users`
+获取用户列表
 
-#### 请求参数
+#### `GET /api/v1/users/{id}`
+获取用户详情
 
-无
+#### `POST /api/v1/users`
+创建用户
 
-#### 响应结果
+#### `POST /api/v1/users/{id}`
+更新用户
 
-- `code`：错误码
-- `data`：当前计数值
+#### `DELETE /api/v1/users/{id}`
+删除用户
 
-##### 响应结果示例
+### 订单管理 API
 
-```json
-{
-  "code": 0,
-  "data": 42
-}
-```
+#### `POST /api/v1/orders/list`
+获取订单列表
 
-#### 调用示例
+#### `GET /api/v1/orders/{id}`
+获取订单详情（包含订单物品）
 
-```
-curl https://<云托管服务域名>/api/count
-```
+#### `POST /api/v1/orders`
+创建订单
 
+#### `POST /api/v1/orders/{id}`
+更新订单
 
+#### `DELETE /api/v1/orders/{id}`
+删除订单
 
-### `POST /api/count`
+#### `GET /api/v1/orders/count`
+获取订单总数
 
-更新计数，自增或者清零
+### 物品管理 API
 
-#### 请求参数
+#### `GET /api/v1/items/list`
+获取物品列表
 
-- `action`：`string` 类型，枚举值
-  - 等于 `"inc"` 时，表示计数加一
-  - 等于 `"clear"` 时，表示计数重置（清零）
+#### `GET /api/v1/items/{id}`
+获取物品详情
 
-##### 请求参数示例
+#### `POST /api/v1/items`
+创建物品
 
-```
-{
-  "action": "inc"
-}
-```
+#### `POST /api/v1/items/{id}`
+更新物品
 
-#### 响应结果
+#### `DELETE /api/v1/items/{id}`
+删除物品
 
-- `code`：错误码
-- `data`：当前计数值
+#### `POST /api/v1/items/{id}/price`
+更新物品价格
 
-##### 响应结果示例
+#### `POST /api/v1/items/user/{userId}/prices`
+批量更新用户物品价格
 
-```json
-{
-  "code": 0,
-  "data": 42
-}
-```
+### 认证 API
 
-#### 调用示例
+#### `POST /api/v1/auth/login`
+用户登录
 
-```
-curl -X POST -H 'content-type: application/json' -d '{"action": "inc"}' https://<云托管服务域名>/api/count
-```
+#### `POST /api/v1/auth/logout`
+用户登出
+
+#### `GET /api/v1/auth/info`
+获取当前用户信息
+
+### 文件上传 API
+
+#### `POST /api/v1/upload/upload`
+上传文件
+
+#### `GET /api/v1/upload/{fileName}`
+获取文件下载链接
 
 ## 使用注意
 如果不是通过微信云托管控制台部署模板代码，而是自行复制/下载模板代码后，手动新建一个服务并部署，需要在「服务设置」中补全以下环境变量，才可正常使用，否则会引发无法连接数据库，进而导致部署失败。
-- MYSQL_ADDRESS
-- MYSQL_PASSWORD
-- MYSQL_USERNAME
+
+### 数据库配置
+- MYSQL_ADDRESS - MySQL数据库地址
+- MYSQL_PASSWORD - MySQL数据库密码
+- MYSQL_USERNAME - MySQL数据库用户名
 以上三个变量的值请按实际情况填写。如果使用云托管内MySQL，可以在控制台MySQL页面获取相关信息。
+
+### 微信配置
+- WECHAT_APPID - 微信小程序AppID
+- WECHAT_SECRET - 微信小程序Secret
+
+### 文件上传配置
+- COS_SECRET_ID - 腾讯云COS SecretId
+- COS_SECRET_KEY - 腾讯云COS SecretKey
+- COS_BUCKET_NAME - COS桶名称
+- COS_REGION - COS地域
+
+### JWT配置
+- JWT_SECRET - JWT密钥
+
+### 系统配置
+- SERVER_PORT - 服务端口（默认8080）
+- SPRING_PROFILES_ACTIVE - Spring环境配置（建议dev/test/prod）
 
 
 ## License

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="common :: head">
+    <title>新增用户 - 极循小程序管理系统</title>
+</head>
+<body th:replace="common :: body">
+    <div th:fragment="container">
+        <h2>新增用户</h2>
+
+        <!-- 新增用户表单 -->
+        <div class="card">
+            <div class="card-body">
+                <form th:action="@{/user/add}" method="post" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="openId" class="form-label">OpenID</label>
+                            <input type="text" class="form-control" id="openId" name="openId" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">手机号</label>
+                            <input type="text" class="form-control" id="phone" name="phone" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">姓名</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="businessLicense" class="form-label">营业执照</label>
+                            <input type="file" class="form-control" id="businessLicense" name="businessLicense" accept="image/*">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> 保存
+                            </button>
+                            <a href="/excycle/user/list" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> 取消
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="common :: head">
+    <title>编辑订单 - 极循小程序管理系统</title>
+</head>
+<body th:replace="common :: body">
+    <div th:fragment="container">
+        <h2>编辑订单</h2>
+
+        <!-- 编辑订单表单 -->
+        <div class="card">
+            <div class="card-body">
+                <form th:action="@{/order/edit/{id}(id=${order.id})}" method="post">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="orderNo" class="form-label">订单号</label>
+                            <input type="text" class="form-control" id="orderNo" name="orderNo" th:value="${order.orderNo}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="openId" class="form-label">用户OpenID</label>
+                            <input type="text" class="form-control" id="openId" name="openId" th:value="${order.openId}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">联系电话</label>
+                            <input type="text" class="form-control" id="phone" name="phone" th:value="${order.phone}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="address" class="form-label">地址</label>
+                            <input type="text" class="form-control" id="address" name="address" th:value="${order.address}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="startTime" class="form-label">开始时间</label>
+                            <input type="datetime-local" class="form-control" id="startTime" name="startTime" th:value="${order.startTime != null ? #temporals.format(order.startTime, 'yyyy-MM-dd\'T\'HH:mm') : ''}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="endTime" class="form-label">结束时间</label>
+                            <input type="datetime-local" class="form-control" id="endTime" name="endTime" th:value="${order.endTime != null ? #temporals.format(order.endTime, 'yyyy-MM-dd\'T\'HH:mm') : ''}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="status" class="form-label">状态</label>
+                            <select class="form-control" id="status" name="status">
+                                <option value="已确认" th:selected="${order.status == '已确认'}">已确认</option>
+                                <option value="进行中" th:selected="${order.status == '进行中'}">进行中</option>
+                                <option value="已完成" th:selected="${order.status == '已完成'}">已完成</option>
+                                <option value="已取消" th:selected="${order.status == '已取消'}">已取消</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="driverId" class="form-label">司机ID</label>
+                            <input type="text" class="form-control" id="driverId" name="driverId" th:value="${order.driverId}">
+                        </div>
+                        <div class="col-12">
+                            <label for="remark" class="form-label">备注</label>
+                            <textarea class="form-control" id="remark" name="remark" rows="3" th:text="${order.remark}"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> 保存
+                            </button>
+                            <a href="/excycle/order/list" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> 取消
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
