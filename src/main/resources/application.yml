@@ -25,7 +25,7 @@ spring:
     suffix: .html
 
   mvc:
-    static-path-pattern: /**
+    static-path-pattern: /static/**
 
 mybatis-plus:
   configuration:
