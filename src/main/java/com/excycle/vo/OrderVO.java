@@ -48,6 +48,8 @@ public class OrderVO {
 
     private Double totalPrice;
 
+    private Integer totalQuantity;
+
     @JsonSerialize(using = TimestampSerializer.class)
     private Long createdAt;
 

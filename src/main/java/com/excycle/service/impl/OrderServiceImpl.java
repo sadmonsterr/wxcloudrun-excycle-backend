@@ -150,6 +150,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         OrderVO orderVO = convertToOrderVOBatch(Collections.singletonList(order)).get(0);
         List<OrderItems> items = orderItemsMapper.getListByOrderId(id);
         orderVO.setItems(convertFromItemList(items));
+        int totalQuantity = items.stream()
+                .mapToInt(OrderItems::getQuantity)
+                .sum();
+        orderVO.setTotalQuantity(totalQuantity);
         return orderVO;
     }
 

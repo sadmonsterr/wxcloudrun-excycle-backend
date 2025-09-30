@@ -9,13 +9,13 @@ public class OrderItemsVO {
 
     private String orderId;
 
-    private Double quantity;
+    private Integer quantity;
 
     private String itemId;
 
     private String itemName;
 
-    private String price;
+    private Double price;
 
 
 }
