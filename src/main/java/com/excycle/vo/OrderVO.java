@@ -1,6 +1,7 @@
 package com.excycle.vo;
 
 import com.excycle.config.TimestampSerializer;
+import com.excycle.entity.FileInfo;
 import com.excycle.entity.OrderItems;
 import com.excycle.enums.OrderStatus;
 import com.fasterxml.jackson.annotation.JsonGetter;
@@ -39,6 +40,8 @@ public class OrderVO {
     private String address;
 
     private String orderImages;
+
+    private FileInfo orderImage;
 
     private String openId;
 

@@ -1,6 +1,7 @@
 package com.excycle.controller.api;
 
 import com.excycle.common.Result;
+import com.excycle.entity.FileInfo;
 import com.excycle.service.CloudBaseService;
 import com.excycle.dto.FileDownloadRequest;
 import com.excycle.dto.BatchFileDownloadRequest;
@@ -29,13 +30,9 @@ public class StorageApiController {
      * POST /api/v1/storage/download-url
      */
     @PostMapping("/download-url")
-    public Result<Map<String, Object>> getDownloadUrl(@Valid @RequestBody FileDownloadRequest request) {
-        try {
-            Map<String, Object> fileInfo = cloudBaseService.getTempFileURL(request.getFileId());
-            return Result.success(fileInfo);
-        } catch (Exception e) {
-            return Result.error("获取文件下载链接失败: " + e.getMessage());
-        }
+    public Result<FileInfo> getDownloadUrl(@Valid @RequestBody FileDownloadRequest request) {
+        FileInfo fileInfo = cloudBaseService.getTempFileURL(request.getFileId());
+        return Result.success(fileInfo);
     }
 
     /**
@@ -43,29 +40,17 @@ public class StorageApiController {
      * POST /api/v1/storage/batch-download-urls
      */
     @PostMapping("/batch-download-urls")
-    public Result<List<Map<String, Object>>> getBatchDownloadUrls(@Valid @RequestBody BatchFileDownloadRequest request) {
-        try {
-            List<String> fileIds = request.getFileIds();
-            List<Map<String, Object>> resultList = new ArrayList<>();
+    public Result<List<FileInfo>> getBatchDownloadUrls(@Valid @RequestBody BatchFileDownloadRequest request) {
+        List<String> fileIds = request.getFileIds();
+        List<FileInfo> resultList = new ArrayList<>();
 
-            for (String fileId : fileIds) {
-                try {
-                    Map<String, Object> fileInfo = cloudBaseService.getTempFileURL(fileId);
-                    fileInfo.put("fileId", fileId);
-                    resultList.add(fileInfo);
-                } catch (Exception e) {
-                    // 单个文件获取失败不影响其他文件
-                    Map<String, Object> errorInfo = new HashMap<>();
-                    errorInfo.put("fileId", fileId);
-                    errorInfo.put("error", e.getMessage());
-                    resultList.add(errorInfo);
-                }
-            }
-
-            return Result.success(resultList);
-        } catch (Exception e) {
-            return Result.error("批量获取文件下载链接失败: " + e.getMessage());
+        for (String fileId : fileIds) {
+            FileInfo fileInfo = cloudBaseService.getTempFileURL(fileId);
+            fileInfo.setFileId(fileId);
+            resultList.add(fileInfo);
         }
+
+        return Result.success(resultList);
     }
 
     /**
@@ -128,12 +113,8 @@ public class StorageApiController {
      * GET /api/v1/storage/check-cloud-url
      */
     @GetMapping("/check-cloud-url")
-    public Result<Map<String, Object>> checkCloudUrlFile(@RequestParam String cloudUrl) {
-        try {
-            Map<String, Object> fileInfo = cloudBaseService.checkCloudUrlFile(cloudUrl);
-            return Result.success(fileInfo);
-        } catch (Exception e) {
-            return Result.error("检查文件失败: " + e.getMessage());
-        }
+    public Result<FileInfo> checkCloudUrlFile(@RequestParam String cloudUrl) {
+        FileInfo fileInfo = cloudBaseService.checkCloudUrlFile(cloudUrl);
+        return Result.success(fileInfo);
     }
 }

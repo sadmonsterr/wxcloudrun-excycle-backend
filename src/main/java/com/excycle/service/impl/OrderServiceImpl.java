@@ -1,14 +1,18 @@
 package com.excycle.service.impl;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.excycle.dto.OrderQueryRequest;
+import com.excycle.dto.CreateOrderRequest;
+import com.excycle.entity.FileInfo;
 import com.excycle.entity.Order;
 import com.excycle.entity.OrderItems;
 import com.excycle.entity.User;
@@ -16,21 +20,24 @@ import com.excycle.enums.OrderStatus;
 import com.excycle.mapper.OrderItemsMapper;
 import com.excycle.mapper.OrderMapper;
 import com.excycle.mapper.UserMapper;
+import com.excycle.service.CloudBaseService;
+import com.excycle.service.FinanceService;
 import com.excycle.service.OrderService;
+import com.excycle.utils.UUIDUtils;
 import com.excycle.vo.OrderItemsVO;
 import com.excycle.vo.OrderVO;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.excycle.enums.OrderStatus.WAITING;
+
+@Slf4j
 @Service
 public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements OrderService {
 
@@ -40,6 +47,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private FinanceService financeService;
+
+    @Autowired
+    private CloudBaseService cloudBaseService;
 
     // TODO dynamic load
     private static final Map<String, String> ITEM_NAME_BY_ID = Collections.unmodifiableMap(new HashMap<String, String>() {{
@@ -154,6 +167,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .mapToInt(OrderItems::getQuantity)
                 .sum();
         orderVO.setTotalQuantity(totalQuantity);
+        FileInfo orderImage = cloudBaseService.getTempFileURL(order.getOrderImages());
+        orderVO.setOrderImage(orderImage);
         return orderVO;
     }
 
@@ -185,9 +200,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     public boolean updateOrder(Order order) {
         Order currentOrder = getById(order.getId());
-        if ( OrderStatus.WAITING.getKey().equals(currentOrder.getStatus()) && order.getDriverId() != null) {
+        if ( OrderStatus.COMPLETED.getKey().equals(currentOrder.getStatus()) || OrderStatus.TRANSFERRING.getKey().equals(currentOrder.getStatus())
+                || OrderStatus.CANCELLED.getKey().equals(currentOrder.getStatus())) {
+            throw new IllegalStateException("订单状态异常，不能更新");
+        }
+        if ( WAITING.getKey().equals(currentOrder.getStatus()) && order.getDriverId() != null) {
             order.setStatus(OrderStatus.ASSIGNED.getKey());
         }
+        if ( OrderStatus.COLLECTED.getKey().equals(currentOrder.getStatus()) &&
+                OrderStatus.TRANSFERRING.getKey().equals(order.getStatus())) {
+            financeService.transfer(currentOrder.getUserId(), currentOrder.getTotalPrice());
+            order.setStatus(OrderStatus.COMPLETED.getKey());
+        }
+
         return updateById(order);
 
     }
@@ -195,5 +220,75 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     public boolean deleteOrder(Long id) {
         return removeById(id);
+    }
+
+
+    public static void main(String[] args) {
+        String orderNo = LocalDateTime.now(ZoneId.of("Asia/Shanghai"))
+                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
+
+        System.out.println(orderNo);
+    }
+    @Override
+    public Order createOrderWithItems(CreateOrderRequest createOrderRequest) {
+        // 生成订单号
+        String orderNo = LocalDateTime.now(ZoneId.of("Asia/Shanghai"))
+                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
+
+        // 计算结束时间（开始时间 + 1小时）
+        Long endTime = createOrderRequest.getStartTime() + 3600 * 1000L;
+        User user = userMapper.selectByOpenId(createOrderRequest.getOpenId());
+
+        // 计算总价和总数量
+        double totalPrice = 0.0;
+        int totalQuantity = 0;
+        for (CreateOrderRequest.OrderItemDTO item : createOrderRequest.getItems()) {
+            totalPrice += item.getPrice() * item.getQuantity();
+            totalQuantity += item.getQuantity();
+        }
+
+        // 创建订单
+        Order order = new Order();
+        order.setId(UUIDUtils.nextBase62SnowflakeId());
+        order.setUserId(user.getId());
+        order.setOrderNo(orderNo);
+        order.setStartTime(createOrderRequest.getStartTime());
+        order.setEndTime(endTime);
+        order.setOpenId(createOrderRequest.getOpenId());
+        order.setAddress(createOrderRequest.getAddress());
+        order.setPhone(createOrderRequest.getPhone());
+        order.setOrderImages(createOrderRequest.getOrderImages());
+        order.setStatus(WAITING.getKey());
+        order.setTotalPrice(totalPrice);
+        order.setOpenId(createOrderRequest.getOpenId());
+        order.setCreatedAt(System.currentTimeMillis());
+        order.setUpdatedAt(System.currentTimeMillis());
+
+        // 保存订单
+        boolean orderSaved = save(order);
+        if (!orderSaved) {
+            throw new RuntimeException("订单保存失败");
+        }
+
+        // 创建订单项
+        List<OrderItems> orderItemsList = createOrderRequest.getItems().stream()
+                .map(item -> {
+                    OrderItems orderItem = new OrderItems();
+                    orderItem.setId(UUIDUtils.nextBase62SnowflakeId());
+                    orderItem.setOrderId(order.getId());
+                    orderItem.setItemId(item.getId());
+                    orderItem.setQuantity(item.getQuantity());
+                    orderItem.setPrice(item.getPrice());
+                    orderItem.setOpenId(order.getOpenId());
+                    return orderItem;
+                })
+                .collect(Collectors.toList());
+
+        // 批量保存订单项
+        for (OrderItems orderItem : orderItemsList) {
+            orderItemsMapper.insert(orderItem);
+        }
+
+        return order;
     }
 }

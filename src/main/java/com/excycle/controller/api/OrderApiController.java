@@ -10,13 +10,15 @@ import com.excycle.vo.OrderVO;
 import com.excycle.service.OrderService;
 import com.excycle.common.Result;
 import com.excycle.dto.OrderQueryRequest;
-import javax.servlet.http.HttpServletRequest;
+import com.excycle.dto.CreateOrderRequest;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -61,13 +63,11 @@ public class OrderApiController {
      * POST /api/v1/orders
      */
     @PostMapping
-    public Result<String> createOrder(@RequestBody Order order) {
-        boolean success = orderService.addOrder(order);
-        if (success) {
-            return Result.success("订单创建成功", order.getId());
-        } else {
-            return Result.error("订单创建失败");
-        }
+    public Result<String> createOrder(@Validated @RequestBody CreateOrderRequest createOrderRequest, HttpServletRequest request) {
+        String openId = request.getHeader("x-wx-openid");
+        createOrderRequest.setOpenId(openId);
+        Order order = orderService.createOrderWithItems(createOrderRequest);
+        return Result.success("订单创建成功", order.getId());
     }
 
     /**

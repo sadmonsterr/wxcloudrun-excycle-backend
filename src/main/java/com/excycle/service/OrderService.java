@@ -3,6 +3,7 @@ package com.excycle.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.excycle.dto.OrderQueryRequest;
+import com.excycle.dto.CreateOrderRequest;
 import com.excycle.entity.Order;
 import com.excycle.vo.OrderVO;
 
@@ -21,4 +22,6 @@ public interface OrderService extends IService<Order> {
     boolean updateOrder(Order order);
 
     boolean deleteOrder(Long id);
+
+    Order createOrderWithItems(CreateOrderRequest createOrderRequest);
 }

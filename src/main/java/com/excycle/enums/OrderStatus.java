@@ -10,7 +10,8 @@ public enum OrderStatus {
     ASSIGNED("ASSIGNED", "已接单"),
     IN_PROGRESS("IN_PROGRESS", "进行中"),
     COLLECTED("COLLECTED", "已取货"),
-    COMPLETED("COMPLETED", "已转账"),
+    TRANSFERRING("TRANSFERRING", "转账"),
+    COMPLETED("COMPLETED", "已完成"),
     UNKNOWN("UNKNOWN", "未知");
     // deprecated
 
