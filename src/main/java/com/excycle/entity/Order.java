@@ -13,7 +13,7 @@ import lombok.Data;
 @TableName("`order`")
 public class Order {
 
-    @TableId(type = IdType.AUTO, value = "_id")
+    @TableId(value = "_id")
     private String id;
 
     private String orderNo;
@@ -43,6 +43,8 @@ public class Order {
 
     @TableField(value = "_openid")
     private String openId;
+
+    private String userId;
 
     private String driverId;
 

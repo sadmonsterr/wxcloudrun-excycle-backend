@@ -6,13 +6,21 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.excycle.entity.User;
 import com.excycle.mapper.UserMapper;
 import com.excycle.service.UserService;
+import com.excycle.vo.UserVO;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.function.Consumer;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+
+    private final UserMapper userMapper;
+
+    public UserServiceImpl(UserMapper userMapper) {
+        this.userMapper = userMapper;
+    }
 
     @Override
     public Page<User> getUserPage(Page<User> page, User user) {
@@ -53,5 +61,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public boolean deleteUser(Long id) {
         return removeById(id);
+    }
+
+    @Override
+    public UserVO getByOpenId(String openId) {
+        User user = userMapper.selectByOpenId(openId);
+        return convertToUserVO(user);
+    }
+
+    private UserVO convertToUserVO(User user) {
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(user, userVO);
+        return userVO;
     }
 }

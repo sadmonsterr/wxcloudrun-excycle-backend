@@ -1,6 +1,7 @@
 package com.excycle.controller.api;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.excycle.context.UserContext;
 import com.excycle.entity.User;
 import com.excycle.vo.UserVO;
 import com.excycle.service.UserService;
@@ -93,6 +94,18 @@ public class UserApiController {
             return Result.error("用户不存在");
         }
     }
+
+    /**
+     * 根据OpenID获取用户
+     * GET /api/v1/users/{id}
+     */
+    @GetMapping("/open")
+    public Result<UserVO> getUserById() {
+        String openId = UserContext.getCurrentOpenId();
+        UserVO user = userService.getByOpenId(openId);
+        return Result.success(user);
+    }
+
 
     /**
      * 创建用户
