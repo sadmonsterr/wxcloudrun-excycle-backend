@@ -3,15 +3,17 @@ package com.excycle.controller.api;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.excycle.context.UserContext;
 import com.excycle.entity.User;
+import com.excycle.vo.AddressVO;
 import com.excycle.vo.UserVO;
 import com.excycle.service.UserService;
 import com.excycle.common.Result;
 import com.excycle.dto.UserQueryRequest;
+import com.excycle.dto.UserRegisterRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -106,6 +108,26 @@ public class UserApiController {
         return Result.success(user);
     }
 
+    /**
+     * 根据OpenID获取用户地址
+     * GET /api/v1/users/{id}
+     */
+    @GetMapping("/address")
+    public Result<Page<AddressVO>> queryAddresses() {
+        String openId = UserContext.getCurrentOpenId();
+        return Result.success(userService.queryAddresses(openId));
+    }
+
+
+    /**
+     * 用户注册
+     * POST /api/v1/users/register
+     */
+    @PostMapping("/register")
+    public Result<String> register(@Validated @RequestBody UserRegisterRequest registerRequest) {
+        User user = userService.registerWithAddress(registerRequest);
+        return Result.success("注册成功", user.getId());
+    }
 
     /**
      * 创建用户

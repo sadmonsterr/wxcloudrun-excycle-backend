@@ -11,13 +11,15 @@ import com.excycle.mapper.ItemMapper;
 import com.excycle.mapper.UserItemMapper;
 import com.excycle.mapper.UserMapper;
 import javax.annotation.PostConstruct;
+
+import com.excycle.vo.ItemVO;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +48,27 @@ public class UserItemService extends ServiceImpl<UserItemMapper, UserItem> {
         return items.stream()
                 .map(item -> userItemById.computeIfAbsent(item.getId(), s -> toUserItem(item)))
                 .collect(Collectors.toList());
+    }
+
+    public List<ItemVO> queryUserItemsByOpenId(String openId) {
+        List<Item> items = itemMapper.selectList(new LambdaQueryWrapper<>());
+        List<String> itemIds = items.stream().map(Item::getId).collect(Collectors.toList());
+        LambdaQueryWrapper<UserItem> queryWrapper = new LambdaQueryWrapper<UserItem>()
+                .eq(UserItem::getOpenid, openId)
+                .in(UserItem::getItemId, itemIds);
+        Map<String, UserItem> userItemById = baseMapper.selectList(queryWrapper)
+                .stream()
+                .collect(Collectors.toMap(UserItem::getItemId, userItem -> userItem));
+        return items.stream()
+                .map(item -> {
+                    ItemVO itemVO = new ItemVO();
+                    BeanUtils.copyProperties(item, itemVO);
+                    userItemById.computeIfPresent(item.getId(), (s, userItem) -> {
+                        itemVO.setPrice(userItem.getPrice());
+                        return userItem;
+                    });
+                    return itemVO;
+                }).collect(Collectors.toList());
     }
 
     private UserItem toUserItem(Item item) {

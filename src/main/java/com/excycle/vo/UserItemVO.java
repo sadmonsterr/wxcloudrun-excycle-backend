@@ -26,4 +26,6 @@ public class UserItemVO {
 
     @JsonSerialize(using = TimestampSerializer.class)
     private Long updatedAt;
+
+    private String icon;
 }

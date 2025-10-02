@@ -18,6 +18,8 @@ public class Item {
 
     private Double price;
 
+    private String icon;
+
     @JsonSerialize(using = TimestampSerializer.class)
     private Long createdAt;
 

@@ -1,7 +1,9 @@
 package com.excycle.controller.api;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.excycle.context.UserContext;
 import com.excycle.entity.UserItem;
+import com.excycle.vo.ItemVO;
 import com.excycle.vo.UserItemVO;
 import com.excycle.service.UserItemService;
 import com.excycle.common.Result;
@@ -96,6 +98,15 @@ public class UserItemApiController {
         List<UserItem> userItems = userItemService.queryUserItems(userId);
         List<UserItemVO> userItemVOs = userItems.stream().map(this::convertToUserItemVO) .collect(Collectors.toList());
         return Result.success(userItemVOs);
+    }
+
+    @GetMapping("/open")
+    public Result<Page<ItemVO>> queryUserItemsByOpenId() {
+        List<ItemVO> userItems = userItemService.queryUserItemsByOpenId(UserContext.getCurrentOpenId());
+        Page<ItemVO> page = new Page<>();
+        page.setTotal(userItems.size());
+        page.setRecords(userItems);
+        return Result.success(page);
     }
 
     /**
