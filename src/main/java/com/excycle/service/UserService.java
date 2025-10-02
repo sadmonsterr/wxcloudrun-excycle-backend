@@ -3,7 +3,11 @@ package com.excycle.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.excycle.entity.User;
+import com.excycle.dto.UserRegisterRequest;
+import com.excycle.vo.AddressVO;
 import com.excycle.vo.UserVO;
+
+import java.util.List;
 
 public interface UserService extends IService<User> {
 
@@ -18,4 +22,8 @@ public interface UserService extends IService<User> {
     boolean deleteUser(Long id);
 
     UserVO getByOpenId(String openId);
+
+    Page<AddressVO> queryAddresses(String openId);
+
+    User registerWithAddress(UserRegisterRequest registerRequest);
 }
