@@ -5,18 +5,14 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONArray;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
-import cn.hutool.crypto.SecureUtil;
-import com.tencentcloudapi.tcb.v20180608.TcbClient;
+import com.excycle.entity.FileInfo;
+import com.excycle.utils.EnvUtils;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
+import javax.annotation.PostConstruct;
 import java.util.*;
-import java.util.Base64;
 
 /**
  * CloudBase云存储服务
@@ -27,18 +23,31 @@ public class CloudBaseService {
     private static final Logger logger = LoggerFactory.getLogger(CloudBaseService.class);
 
     // WeChat Cloud Base配置信息
-    private static final String WECHAT_API_BASE_URL = "http://api.weixin.qq.com";
+    private static final String WECHAT_API_BASE_URL = "https://api.weixin.qq.com";
 
     private static final String ENV_ID = "excycle-3gude89g2e454ced"; // 需要替换为实际的云开发环境ID
 
-    private static final String ACCESS_TOKEN = "96_KzgnFIRaNsaYfYs5DyhgvtwfCtXsk7ydbsnBDlzItVea9XGg2oZpmtmAregofHpV-M6svcI6xxSXRmg5RMm8lOXv-cr4beBW2jx2scFIwTfiW3SRoi6g9kenLq4YFEfABAMTS"; // 需要从微信获取的access_token
+    private static String ACCESS_TOKEN = ""; // 需要从微信获取的access_token
+
+    @PostConstruct
+    public void init() {
+        // 从微信获取access_token
+        if (!EnvUtils.isProd()) {
+            HttpResponse response = HttpRequest.get("https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=wx764480a6fa9e8719&secret=5c15cbefcd1e02499fbb2c6355365a63")
+                    .timeout(30000)
+                    .execute();
+            JSONObject result = JSON.parseObject(response.body());
+            logger.info("token {}", result);
+            ACCESS_TOKEN = result.getString("access_token");
+        }
+    }
 
     /**
      * 获取文件临时下载链接
      * @param fileId 云存储文件ID
      * @return 文件下载信息
      */
-    public Map<String, Object> getTempFileURL(String fileId) {
+    public FileInfo getTempFileURL(String fileId) {
         try {
             // 验证文件ID不为空
             if (fileId == null || fileId.trim().isEmpty()) {
@@ -59,12 +68,14 @@ public class CloudBaseService {
             fileList.add(fileInfo);
             params.put("file_list", fileList);
 
+            String queryParams = EnvUtils.isProd() ? "" : "?access_token=" + ACCESS_TOKEN;
             // 调用微信云API
-            String apiUrl = WECHAT_API_BASE_URL + "/tcb/batchdownloadfile";
+            String WechatApiBaseUrl = EnvUtils.isProd() ? WECHAT_API_BASE_URL.replace("https", "http") : WECHAT_API_BASE_URL;
+            String apiUrl = WechatApiBaseUrl + "/tcb/batchdownloadfile" + queryParams;
             HttpResponse response = HttpRequest.post(apiUrl)
                     .header("Content-Type", "application/json")
                     .body(JSON.toJSONString(params))
-                    .timeout(30000)
+                    .timeout(3000)
                     .execute();
 
             logger.info("WeChat Cloud API response status: {}, body: {}", response.getStatus(), response.body());
@@ -83,14 +94,10 @@ public class CloudBaseService {
                             if (downloadUrl == null || downloadUrl.isEmpty()) {
                                 throw new RuntimeException("文件下载链接为空");
                             }
-
-                            Map<String, Object> fileData = new HashMap<>();
-                            fileData.put("downloadUrl", downloadUrl);
-                            fileData.put("fileName", extractFileNameFromId(fileId));
-                            fileData.put("fileSize", fileResult.getLongValue("file_size"));
-                            fileData.put("fileType", getFileType(extractFileNameFromId(fileId)));
-
-                            return fileData;
+                            String fileName = extractFileNameFromId(fileId);
+                            Long fileSize = fileResult.getLongValue("file_size");
+                            String fileType = getFileType(fileName);
+                            return new FileInfo(downloadUrl, fileName, fileSize, fileType);
                         } else {
                             String errorMsg = fileResult.getString("errmsg");
                             throw new RuntimeException("文件下载失败: " + errorMsg);
@@ -221,7 +228,7 @@ public class CloudBaseService {
      * @param cloudUrl cloud://格式的URL
      * @return 文件信息
      */
-    public Map<String, Object> checkCloudUrlFile(String cloudUrl) {
+    public FileInfo checkCloudUrlFile(String cloudUrl) {
         try {
             logger.info("Checking cloud URL file: {}", cloudUrl);
 
