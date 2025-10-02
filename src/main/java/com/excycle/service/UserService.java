@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.excycle.entity.User;
 import com.excycle.dto.UserRegisterRequest;
+import com.excycle.entity.UserWallet;
 import com.excycle.vo.AddressVO;
 import com.excycle.vo.UserVO;
 
@@ -26,4 +27,6 @@ public interface UserService extends IService<User> {
     Page<AddressVO> queryAddresses(String openId);
 
     User registerWithAddress(UserRegisterRequest registerRequest);
+
+    UserWallet getUserWallet(String openId);
 }

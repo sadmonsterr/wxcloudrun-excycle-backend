@@ -4,11 +4,10 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
-import com.excycle.config.TimestampSerializer;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 
 @Data
 @TableName("user_wallet")
@@ -27,11 +26,12 @@ public class UserWallet {
 
     private Integer version;
 
+    @TableField("open_id")
+    private String openId;
+
     @TableField("created_at")
-    @JsonSerialize(using = TimestampSerializer.class)
-    private Long createdAt;
+    private Timestamp createdAt;
 
     @TableField("updated_at")
-    @JsonSerialize(using = TimestampSerializer.class)
-    private Long updatedAt;
+    private Timestamp updatedAt;
 }

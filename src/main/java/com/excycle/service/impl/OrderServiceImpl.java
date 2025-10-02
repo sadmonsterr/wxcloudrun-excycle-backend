@@ -209,7 +209,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
         if ( OrderStatus.COLLECTED.getKey().equals(currentOrder.getStatus()) &&
                 OrderStatus.TRANSFERRING.getKey().equals(order.getStatus())) {
-            financeService.transfer(currentOrder.getUserId(), currentOrder.getTotalPrice());
+            financeService.transfer(currentOrder.getUserId(), currentOrder.getOpenId(), currentOrder.getTotalPrice());
             order.setStatus(OrderStatus.COMPLETED.getKey());
         }
 

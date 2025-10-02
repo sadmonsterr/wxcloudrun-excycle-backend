@@ -6,8 +6,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.excycle.context.UserContext;
 import com.excycle.entity.Address;
 import com.excycle.entity.User;
+import com.excycle.entity.UserWallet;
 import com.excycle.mapper.AddressMapper;
 import com.excycle.mapper.UserMapper;
+import com.excycle.service.FinanceService;
 import com.excycle.service.UserService;
 import com.excycle.dto.UserRegisterRequest;
 import com.excycle.vo.AddressVO;
@@ -29,9 +31,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final AddressMapper addressMapper;
 
-    public UserServiceImpl(UserMapper userMapper, AddressMapper addressMapper) {
+    private final FinanceService financeService;
+
+    public UserServiceImpl(UserMapper userMapper, AddressMapper addressMapper, FinanceService financeService) {
         this.userMapper = userMapper;
         this.addressMapper = addressMapper;
+        this.financeService = financeService;
     }
 
     @Override
@@ -146,5 +151,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         save(user);
 
         return user;
+    }
+
+    @Override
+    public UserWallet getUserWallet(String openId) {
+        return financeService.getUserWallet(openId);
     }
 }

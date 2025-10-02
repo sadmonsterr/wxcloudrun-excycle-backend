@@ -1,8 +1,12 @@
 package com.excycle.controller.api;
 
+import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.excycle.context.UserContext;
+import com.excycle.dto.WithdrawDTO;
 import com.excycle.entity.User;
+import com.excycle.entity.UserWallet;
+import com.excycle.service.FinanceService;
 import com.excycle.vo.AddressVO;
 import com.excycle.vo.UserVO;
 import com.excycle.service.UserService;
@@ -14,6 +18,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -25,6 +30,9 @@ public class UserApiController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private FinanceService financeService;
 
     /**
      * 获取用户列表
@@ -118,6 +126,19 @@ public class UserApiController {
         return Result.success(userService.queryAddresses(openId));
     }
 
+    @GetMapping("/wallet")
+    public Result<UserWallet> getUserWallet() {
+        Assert.notNull(UserContext.getCurrentUserId(), "用户未注册");
+        String openId = UserContext.getCurrentOpenId();
+        return Result.success(userService.getUserWallet(openId));
+    }
+
+    @PostMapping("/withdraw")
+    public Result<Map<String, Object>> withdraw(@RequestBody @Validated WithdrawDTO withdrawDTO) {
+        Assert.notNull(UserContext.getCurrentUserId(), "用户未注册");
+        Map<String, Object> result = financeService.withdraw(UserContext.getCurrentUserId(), withdrawDTO.getAmount());
+        return Result.success(result);
+    }
 
     /**
      * 用户注册
