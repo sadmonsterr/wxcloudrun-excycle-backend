@@ -4,7 +4,10 @@ import lombok.Data;
 
 @Data
 public class UserContext {
+
     private String openId;
+
+    private String userId;
 
     private static final ThreadLocal<UserContext> CONTEXT = new ThreadLocal<>();
 
@@ -24,6 +27,11 @@ public class UserContext {
     public static String getCurrentOpenId() {
         UserContext context = CONTEXT.get();
         return context != null ? context.getOpenId() : null;
+    }
+
+    public static String getCurrentUserId() {
+        UserContext context = CONTEXT.get();
+        return context != null ? context.getUserId() : null;
     }
 
     public static void clear() {
