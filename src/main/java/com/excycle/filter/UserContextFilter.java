@@ -28,7 +28,7 @@ public class UserContextFilter implements Filter {
         try {
             // 从请求头获取 openId
             String openId = httpRequest.getHeader("x-wx-openid");
-            String userId = httpRequest.getHeader("x-wx-userid");
+            String userId = httpRequest.getHeader("wx-userid");
 
             // 创建并设置用户上下文
             UserContext userContext = new UserContext();
@@ -36,7 +36,7 @@ public class UserContextFilter implements Filter {
             userContext.setUserId(userId);
             UserContext.setCurrent(userContext);
 
-            log.debug("Set UserContext for openId: {}", openId);
+            log.info("Set UserContext for openId: {}, userId {} ", openId, userId);
 
             // 继续过滤器链
             chain.doFilter(request, response);
