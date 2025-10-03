@@ -42,9 +42,7 @@ public class TransferToUser {
 //  );
   private static TransferToUser client;
 
-
-
-  public static void main(String[] args) {
+  static {
     String mchId = System.getenv("MCH_ID");
     String apiClientCertificateSerialNo = System.getenv("API_CLIENT_SERIAL_NO");
     String apiClientPrivateKeyString = System.getenv("API_CLIENT_PRIVATE_KEY_STRING");
@@ -55,7 +53,6 @@ public class TransferToUser {
     log.info("apiClientPrivateKeyString {}", apiClientPrivateKeyString);
     log.info("wechatPayPublicKeyId {}", wechatPayPublicKeyId);
     log.info("wechatPayPublicKeyString {}", wechatPayPublicKeyString);
-
     client = new TransferToUser(
             mchId,                    // 商户号，是由微信支付系统生成并分配给每个商户的唯一标识符，商户号获取方式参考 https://pay.weixin.qq.com/doc/v3/merchant/4013070756
             apiClientCertificateSerialNo,         // 商户API证书序列号，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013053053
@@ -63,6 +60,10 @@ public class TransferToUser {
             wechatPayPublicKeyId,      // 微信支付公钥ID，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013038816
             WXPayUtility.loadPublicKeyFromString(wechatPayPublicKeyString)           // 微信支付公钥文件路径，本地文件路径
     );
+  }
+
+  public static void main(String[] args) {
+
     TransferToUserResponse response = client.transfer(10L, "oaWBO10x5LiiFSHsXZYOd8k03lWU", "plfk2020042013");
     // TODO: 请求成功，继续业务逻辑
     System.out.println(response);
@@ -85,7 +86,7 @@ public class TransferToUser {
     transferSceneReportInfosItem0.infoContent = "轮胎";
     request.transferSceneReportInfos.add(transferSceneReportInfosItem0);
     try {
-      TransferToUserResponse response = client.run(request);
+      TransferToUserResponse response = run(request);
       // TODO: 请求成功，继续业务逻辑
       System.out.println(response);
       return response;
