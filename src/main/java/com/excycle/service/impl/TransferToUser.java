@@ -2,7 +2,7 @@ package com.excycle.service.impl;
 
 import com.excycle.utils.WXPayUtility;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.annotations.Expose;
+import com.wechat.pay.java.core.util.GsonUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
@@ -11,14 +11,20 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.time.DateTimeException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
+import java.util.Objects;
+
+import static com.excycle.utils.WXPayUtility.verify;
 
 /**
  * 发起转账
@@ -40,14 +46,17 @@ public class TransferToUser {
 //          "PUB_KEY_ID_0117288133772025100200181886000802",      // 微信支付公钥ID，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013038816
 //          "/Users/lanma/Downloads/excycle/pub_key.pem"           // 微信支付公钥文件路径，本地文件路径
 //  );
-  private static TransferToUser client;
 
-  public static void main(String[] args) {
+
+  public static TransferToUser client;
+
+  static {
     String mchId = System.getenv("MCH_ID");
     String apiClientCertificateSerialNo = System.getenv("API_CLIENT_SERIAL_NO");
     String apiClientPrivateKeyString = System.getenv("API_CLIENT_PRIVATE_KEY_STRING");
     String wechatPayPublicKeyId = System.getenv("WECHAT_PAY_PUBLIC_KEY_ID");
     String wechatPayPublicKeyString = System.getenv("WECHAT_PAY_PUBLIC_KEY_STRING");
+    String apiV3Secret = System.getenv("API_V3_SECRET");
     log.info("mchId {}", mchId);
     log.info("apiClientCertificateSerialNo {}", apiClientCertificateSerialNo);
     log.info("apiClientPrivateKeyString {}", apiClientPrivateKeyString);
@@ -59,9 +68,72 @@ public class TransferToUser {
             apiClientCertificateSerialNo,         // 商户API证书序列号，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013053053
             WXPayUtility.loadPrivateKeyFromString(apiClientPrivateKeyString),     // 商户API证书私钥文件路径，本地文件路径
             wechatPayPublicKeyId,      // 微信支付公钥ID，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013038816
-            WXPayUtility.loadPublicKeyFromString(wechatPayPublicKeyString)           // 微信支付公钥文件路径，本地文件路径
+            WXPayUtility.loadPublicKeyFromString(wechatPayPublicKeyString),         // 微信支付公钥文件路径，本地文件路径
+            apiV3Secret
     );
-    TransferToUserResponse response = client.transfer(10L, "oaWBO10x5LiiFSHsXZYOd8k03lWU", "plfk2020042013");
+  }
+
+  public static void main(String[] args) {
+    String mchId = System.getenv("MCH_ID");
+    String apiClientCertificateSerialNo = System.getenv("API_CLIENT_SERIAL_NO");
+    String apiClientPrivateKeyString = System.getenv("API_CLIENT_PRIVATE_KEY_STRING");
+    String wechatPayPublicKeyId = System.getenv("WECHAT_PAY_PUBLIC_KEY_ID");
+    String wechatPayPublicKeyString = System.getenv("WECHAT_PAY_PUBLIC_KEY_STRING");
+    String apiV3Secret = System.getenv("API_V3_SECRET");
+    log.info("mchId {}", mchId);
+    log.info("apiClientCertificateSerialNo {}", apiClientCertificateSerialNo);
+    log.info("apiClientPrivateKeyString {}", apiClientPrivateKeyString);
+    log.info("wechatPayPublicKeyId {}", wechatPayPublicKeyId);
+    log.info("wechatPayPublicKeyString {}", wechatPayPublicKeyString);
+
+    String timestamp = "1759511445";
+    try {
+      Instant responseTime = Instant.ofEpochSecond(Long.parseLong(timestamp));
+      // 拒绝过期请求
+      if (Duration.between(responseTime, Instant.now()).abs().toMinutes() >= 500000) {
+        throw new IllegalArgumentException(
+                String.format("Validate notification failed, timestamp[%s] is expired", timestamp));
+      }
+    } catch (DateTimeException | NumberFormatException e) {
+      throw new IllegalArgumentException(
+              String.format("Validate notification failed, timestamp[%s] is invalid", timestamp));
+    }
+    String serialNumber = "PUB_KEY_ID_0117288133772025100200181886000802";
+    if (!Objects.equals(serialNumber, wechatPayPublicKeyId)) {
+      throw new IllegalArgumentException(
+              String.format("Validate notification failed, Invalid Wechatpay-Serial, Local: %s, " +
+                              "Remote: %s",
+                      wechatPayPublicKeyId,
+                      serialNumber));
+    }
+    String body = "{\"id\":\"93c43dcb-36e5-596f-be20-4f23eeeece11\",\"create_time\":\"2025-10-04T01:10:39+08:00\",\"resource_type\":\"encrypt-resource\",\"event_type\":\"MCHTRANSFER.BILL.FINISHED\",\"summary\":\"商家转账单据终态通知\",\"resource\":{\"original_type\":\"mch_payment\",\"algorithm\":\"AEAD_AES_256_GCM\",\"ciphertext\":\"wkBS3bPUjgId5b9Q8nadZ6XG4d0NDBqj9Sssc6RsR5fEo5ONYEZlKbztYDHujsEco7NZrO8nHdC9y5CXGkNQ32DqLXUP3/YHK3rlONZYv1V9rcJ8B9vzHwduj6MP8WpLnnmL7xzbAVUGyzvP16S6qemnFudZKHaoxB0BjsV3sJXCe55h+IW8eiyyw2iFFe3Klrs6B2xepj2g/9p+jKxW4Uw71cSy/pCZMeX6pmINkQIxxiT5pjewwuheian3GsvX37B7TWHLtqh8LjFyV1MpsrhVRSDJtIAkoRSx8AznIbZGbIMX5vxASkaXMtBuyF+3XO6tQgmqsZrjqV+e48hcsGkS/gRCPC7q3ulGHxfqLylLV1c0NrtMUfkNBGe43yXomdQfVlvTss/64gw9nkK8R8E=\",\"associated_data\":\"mch_payment\",\"nonce\":\"Waf01GhiOsYd\"}}";
+    String signature = "g7HxTkbVuQOMH3flusLHJuePlJp+uNwht1Bb/L7CDekAShtdAHExQuLp/so2Vztb7ahNP7UC7VErbeTblK9y7klAJFSUo2PSXhyqmEjjsPvG3MruOMg2oJrxV5VvRVJGKfWfdhnrrvOL+xtAkKjB9ksz1UYWi1Bb18Kkl+pls0s8eHKlBm75+wJ0SuXErZfg7QvizqTgZJJ79/8CgvbOvB2dyX8sb5hArYsOJJ+zrzxqXqtFghHjMlQlJhnpfHVWRl0AtwIDDPlZwxeXML03wy2vCJGRsNJ595QvsofGjxx66jiQVMnRU2OkypBZcoZ4mb3GDgvyCCEtb8FnouPpYQ==";
+    String message = String.format("%s\n%s\n%s\n", timestamp, "SMhYjgSAkcoNmcul9LzDdCUPnqKa3VkU",
+            body == null ? "" : body);
+
+    boolean success = verify(message, signature, "SHA256withRSA", WXPayUtility.loadPublicKeyFromString(wechatPayPublicKeyString));
+    if (!success) {
+      throw new IllegalArgumentException(
+              String.format("Validate notification failed, WechatPay signature is incorrect.\n"
+                              + "responseHeader[%s]\tresponseBody[%.1024s]",
+                      "headers", body));
+    }
+    WXPayUtility.Notification notification = WXPayUtility.decrypt(apiV3Secret,  body);
+    log.info("{}", notification);
+    TransferToUserResponse response = GsonUtil.getGson().fromJson(notification.getPlaintext(), TransferToUserResponse.class);
+
+    log.info("{}", response);
+//    WXPayUtility.validateNotification(wechatPayPublicKeyId , WXPayUtility.loadPublicKeyFromString(wechatPayPublicKeyString)  ,
+//            "wechatpayPublicKey", request.getHeaders(), WXPayUtility.extractBody(request));
+
+//    client = new TransferToUser(
+//            mchId,                    // 商户号，是由微信支付系统生成并分配给每个商户的唯一标识符，商户号获取方式参考 https://pay.weixin.qq.com/doc/v3/merchant/4013070756
+//            apiClientCertificateSerialNo,         // 商户API证书序列号，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013053053
+//            WXPayUtility.loadPrivateKeyFromString(apiClientPrivateKeyString),     // 商户API证书私钥文件路径，本地文件路径
+//            wechatPayPublicKeyId,      // 微信支付公钥ID，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013038816
+//            WXPayUtility.loadPublicKeyFromString(wechatPayPublicKeyString)           // 微信支付公钥文件路径，本地文件路径
+//    );
+    response = client.transfer(10L, "oaWBO10x5LiiFSHsXZYOd8k03lWU", "plfk2020042013");
     // TODO: 请求成功，继续业务逻辑
     System.out.println(response);
   }
@@ -94,17 +166,25 @@ public class TransferToUser {
     }
   }
 
+  public static void validateNotification() {
+
+//    WXPayUtility.validateNotification(, "wechatpayPublicKeyId",
+//            "wechatpayPublicKey", request.getHeaders(), WXPayUtility.extractBody(request));
+  }
 
 
   public TransferToUserResponse run(TransferToUserRequest request) {
     String uri = PATH;
     String reqBody = WXPayUtility.toJson(request);
+    log.info("request body: {}", reqBody);
 
     Request.Builder reqBuilder = new Request.Builder().url(HOST + uri);
     reqBuilder.addHeader("Accept", "application/json");
     reqBuilder.addHeader("Wechatpay-Serial", wechatPayPublicKeyId);
     reqBuilder.addHeader("Authorization", WXPayUtility.buildAuthorization(mchid, certificateSerialNo,privateKey, METHOD, uri, reqBody));
     reqBuilder.addHeader("Content-Type", "application/json");
+
+
     RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), reqBody);
     reqBuilder.method(METHOD, requestBody);
     Request httpRequest = reqBuilder.build();
@@ -128,6 +208,12 @@ public class TransferToUser {
     }
   }
 
+  public TransferToUserResponse parseNotification(HttpServletRequest request, String body) {
+    WXPayUtility.Notification notification = WXPayUtility.parseNotification(apiV3Secret,
+            wechatPayPublicKeyId, wechatPayPublicKey, request, body);
+    return GsonUtil.getGson().fromJson(notification.getPlaintext(), TransferToUserResponse.class);
+  }
+
   private String mchid;
 
   private String certificateSerialNo;
@@ -138,24 +224,29 @@ public class TransferToUser {
 
   private PublicKey wechatPayPublicKey;
 
+  private String apiV3Secret;
+
   public TransferToUser() {
 
   }
 
-  public TransferToUser(String mchid, String certificateSerialNo, PrivateKey privateKey, String wechatPayPublicKeyId, PublicKey wechatPayPublicKey) {
+  public TransferToUser(String mchid, String certificateSerialNo, PrivateKey privateKey, String wechatPayPublicKeyId, PublicKey wechatPayPublicKey, String apiV3Secret) {
     this.mchid = mchid;
     this.certificateSerialNo = certificateSerialNo;
     this.privateKey = privateKey;
     this.wechatPayPublicKeyId = wechatPayPublicKeyId;
     this.wechatPayPublicKey = wechatPayPublicKey;
+    this.apiV3Secret = apiV3Secret;
   }
 
-  public TransferToUser(String mchid, String certificateSerialNo, String privateKeyFilePath, String wechatPayPublicKeyId, String wechatPayPublicKeyFilePath) {
+  public TransferToUser(String mchid, String certificateSerialNo, String privateKeyFilePath, String wechatPayPublicKeyId, String wechatPayPublicKeyFilePath,
+                        String apiV3Secret) {
     this.mchid = mchid;
     this.certificateSerialNo = certificateSerialNo;
     this.privateKey = WXPayUtility.loadPrivateKeyFromPath(privateKeyFilePath);
     this.wechatPayPublicKeyId = wechatPayPublicKeyId;
     this.wechatPayPublicKey = WXPayUtility.loadPublicKeyFromPath(wechatPayPublicKeyFilePath);
+    this.apiV3Secret = apiV3Secret;
   }
 
 

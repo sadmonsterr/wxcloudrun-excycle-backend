@@ -19,6 +19,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
@@ -560,6 +561,51 @@ public class WXPayUtility {
         }
     }
 
+
+    /**
+     * 根据微信支付APIv3通知验签规则对通知签名进行验证，验证不通过时抛出异常
+     * @param wechatpayPublicKeyId 微信支付公钥ID
+     * @param wechatpayPublicKey 微信支付公钥对象
+     * @param request HttpServletRequest
+     * @param body 微信支付通知 Body
+     */
+    public static void validateNotification(String wechatpayPublicKeyId,
+                                            PublicKey wechatpayPublicKey, HttpServletRequest request,
+                                            String body) {
+        String timestamp = request.getHeader("Wechatpay-Timestamp");
+        try {
+            Instant responseTime = Instant.ofEpochSecond(Long.parseLong(timestamp));
+            // 拒绝过期请求
+            if (Duration.between(responseTime, Instant.now()).abs().toMinutes() >= 5) {
+                throw new IllegalArgumentException(
+                        String.format("Validate notification failed, timestamp[%s] is expired", timestamp));
+            }
+        } catch (DateTimeException | NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    String.format("Validate notification failed, timestamp[%s] is invalid", timestamp));
+        }
+        String serialNumber = request.getHeader("Wechatpay-Serial");
+        if (!Objects.equals(serialNumber, wechatpayPublicKeyId)) {
+            throw new IllegalArgumentException(
+                    String.format("Validate notification failed, Invalid Wechatpay-Serial, Local: %s, " +
+                                    "Remote: %s",
+                            wechatpayPublicKeyId,
+                            serialNumber));
+        }
+
+        String signature = request.getHeader("Wechatpay-Signature");
+        String nonce = request.getHeader("Wechatpay-Nonce");
+        String message = String.format("%s\n%s\n%s\n", timestamp, nonce, body == null ? "" : body);
+
+        boolean success = verify(message, signature, "SHA256withRSA", wechatpayPublicKey);
+        if (!success) {
+            throw new IllegalArgumentException(
+                    String.format("Validate notification failed, WechatPay signature is incorrect.\n"
+                                    + "responseHeader[%s]\tresponseBody[%.1024s]",
+                            message, body));
+        }
+    }
+
     /**
      * 对微信支付通知进行签名验证、解析，同时将业务数据解密。验签名失败、解析失败、解密失败时抛出异常
      * @param apiv3Key 商户的 APIv3 Key
@@ -573,6 +619,21 @@ public class WXPayUtility {
                                                  PublicKey wechatpayPublicKey, Headers headers,
                                                  String body) {
         validateNotification(wechatpayPublicKeyId, wechatpayPublicKey, headers, body);
+        Notification notification = gson.fromJson(body, Notification.class);
+        notification.decrypt(apiv3Key);
+        return notification;
+    }
+
+    public static Notification parseNotification(String apiv3Key, String wechatpayPublicKeyId,
+                                                 PublicKey wechatpayPublicKey, HttpServletRequest request,
+                                                 String body) {
+        validateNotification(wechatpayPublicKeyId, wechatpayPublicKey, request, body);
+        Notification notification = gson.fromJson(body, Notification.class);
+        notification.decrypt(apiv3Key);
+        return notification;
+    }
+
+    public static Notification decrypt(String apiv3Key, String body) {
         Notification notification = gson.fromJson(body, Notification.class);
         notification.decrypt(apiv3Key);
         return notification;

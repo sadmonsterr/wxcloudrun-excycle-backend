@@ -19,6 +19,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.excycle.service.impl.TransferToUser.client;
+
 @Slf4j
 @Service
 public class FinanceServiceImpl implements FinanceService {
@@ -26,36 +28,6 @@ public class FinanceServiceImpl implements FinanceService {
     private final UserWalletMapper walletMapper;
 
     private final WithdrawalRequestMapper withdrawalRequestMapper;
-
-    private static final String mchId = System.getenv("MCH_ID");
-
-    private static final String apiClientCertificateSerialNo = System.getenv("API_CLIENT_SERIAL_NO");
-
-    private static final String apiClientPrivateKeyString = System.getenv("API_CLIENT_PRIVATE_KEY_STRING");
-
-    private static final String wechatPayPublicKeyId = System.getenv("WECHAT_PAY_PUBLIC_KEY_ID");
-
-    private static final String wechatPayPublicKeyString = System.getenv("WECHAT_PAY_PUBLIC_KEY_STRING");
-
-    static {
-        log.info("mchId {}", mchId);
-
-        log.info("apiClientCertificateSerialNo {}", apiClientCertificateSerialNo);
-
-        log.info("apiClientPrivateKeyString {}", apiClientPrivateKeyString);
-
-        log.info("wechatPayPublicKeyId {}", wechatPayPublicKeyId);
-
-        log.info("wechatPayPublicKeyString {}", wechatPayPublicKeyString);
-    }
-
-    private static final TransferToUser client = new TransferToUser(
-            mchId,                    // 商户号，是由微信支付系统生成并分配给每个商户的唯一标识符，商户号获取方式参考 https://pay.weixin.qq.com/doc/v3/merchant/4013070756
-            apiClientCertificateSerialNo,         // 商户API证书序列号，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013053053
-            WXPayUtility.loadPrivateKeyFromString(apiClientPrivateKeyString),     // 商户API证书私钥文件路径，本地文件路径
-            wechatPayPublicKeyId,      // 微信支付公钥ID，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013038816
-            WXPayUtility.loadPublicKeyFromString(wechatPayPublicKeyString)           // 微信支付公钥文件路径，本地文件路径
-    );
 
     public FinanceServiceImpl(UserWalletMapper walletMapper, WithdrawalRequestMapper withdrawalRequestMapper) {
         this.walletMapper = walletMapper;
