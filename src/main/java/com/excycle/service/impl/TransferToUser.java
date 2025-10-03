@@ -74,7 +74,7 @@ public class TransferToUser {
 //    request.userName = client.encrypt("韩煜贇");
     request.transferAmount = amount;
     request.transferRemark = "二手回收货款";
-    request.notifyUrl = "https://excycle-backend-189832-5-1378998210.sh.run.tcloudbase.com/excycle/api/notify/transfer";
+    request.notifyUrl = "https://excycle-backend-189832-5-1378998210.sh.run.tcloudbase.com/excycle/api/v1/notify/transfer";
     request.transferSceneId = "1010";
     request.userRecvPerception = "二手回收货款";
     request.transferSceneReportInfos = new ArrayList<>();
