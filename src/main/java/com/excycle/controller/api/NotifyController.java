@@ -16,7 +16,7 @@ import java.util.Map;
 public class NotifyController {
 
     @PostMapping("/transfer")
-    public void transferNotify(@RequestBody Map<String, Object> body, HttpServletRequest request) {
+    public void transferNotify(@RequestBody String body, HttpServletRequest request) {
         Collections.list(request.getHeaderNames()).forEach(s -> log.info("header {}, value {}", s, request.getHeader(s)));
         log.info("transferNotify: {}", body);
     }
