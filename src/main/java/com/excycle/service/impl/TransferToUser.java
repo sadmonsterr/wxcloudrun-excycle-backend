@@ -32,16 +32,37 @@ public class TransferToUser {
 
   private static String PATH = "/v3/fund-app/mch-transfer/transfer-bills";
 
-  // TODO: 请准备商户开发必要参数，参考：https://pay.weixin.qq.com/doc/v3/merchant/4013070756
-  private static TransferToUser client = new TransferToUser(
-          "1728813377",                    // 商户号，是由微信支付系统生成并分配给每个商户的唯一标识符，商户号获取方式参考 https://pay.weixin.qq.com/doc/v3/merchant/4013070756
-          "151578A8CE7158F03312FD35D31AB778755C2808",         // 商户API证书序列号，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013053053
-          "/Users/lanma/Downloads/excycle/1728813377_20251002_cert/apiclient_key.pem",     // 商户API证书私钥文件路径，本地文件路径
-          "PUB_KEY_ID_0117288133772025100200181886000802",      // 微信支付公钥ID，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013038816
-          "/Users/lanma/Downloads/excycle/pub_key.pem"           // 微信支付公钥文件路径，本地文件路径
-  );
+//  // TODO: 请准备商户开发必要参数，参考：https://pay.weixin.qq.com/doc/v3/merchant/4013070756
+//  private static TransferToUser client = new TransferToUser(
+//          "1728813377",                    // 商户号，是由微信支付系统生成并分配给每个商户的唯一标识符，商户号获取方式参考 https://pay.weixin.qq.com/doc/v3/merchant/4013070756
+//          "151578A8CE7158F03312FD35D31AB778755C2808",         // 商户API证书序列号，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013053053
+//          "/Users/lanma/Downloads/excycle/1728813377_20251002_cert/apiclient_key.pem",     // 商户API证书私钥文件路径，本地文件路径
+//          "PUB_KEY_ID_0117288133772025100200181886000802",      // 微信支付公钥ID，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013038816
+//          "/Users/lanma/Downloads/excycle/pub_key.pem"           // 微信支付公钥文件路径，本地文件路径
+//  );
+  private static TransferToUser client;
+
+
 
   public static void main(String[] args) {
+    String mchId = System.getenv("MCH_ID");
+    String apiClientCertificateSerialNo = System.getenv("API_CLIENT_SERIAL_NO");
+    String apiClientPrivateKeyString = System.getenv("API_CLIENT_PRIVATE_KEY_STRING");
+    String wechatPayPublicKeyId = System.getenv("WECHAT_PAY_PUBLIC_KEY_ID");
+    String wechatPayPublicKeyString = System.getenv("WECHAT_PAY_PUBLIC_KEY_STRING");
+    log.info("mchId {}", mchId);
+    log.info("apiClientCertificateSerialNo {}", apiClientCertificateSerialNo);
+    log.info("apiClientPrivateKeyString {}", apiClientPrivateKeyString);
+    log.info("wechatPayPublicKeyId {}", wechatPayPublicKeyId);
+    log.info("wechatPayPublicKeyString {}", wechatPayPublicKeyString);
+
+    client = new TransferToUser(
+            mchId,                    // 商户号，是由微信支付系统生成并分配给每个商户的唯一标识符，商户号获取方式参考 https://pay.weixin.qq.com/doc/v3/merchant/4013070756
+            apiClientCertificateSerialNo,         // 商户API证书序列号，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013053053
+            WXPayUtility.loadPrivateKeyFromString(apiClientPrivateKeyString),     // 商户API证书私钥文件路径，本地文件路径
+            wechatPayPublicKeyId,      // 微信支付公钥ID，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013038816
+            WXPayUtility.loadPublicKeyFromString(wechatPayPublicKeyString)           // 微信支付公钥文件路径，本地文件路径
+    );
     TransferToUserResponse response = client.transfer(10L, "oaWBO10x5LiiFSHsXZYOd8k03lWU", "plfk2020042013");
     // TODO: 请求成功，继续业务逻辑
     System.out.println(response);
@@ -109,15 +130,27 @@ public class TransferToUser {
     }
   }
 
-  private final String mchid;
+  private String mchid;
 
-  private final String certificateSerialNo;
+  private String certificateSerialNo;
 
-  private final PrivateKey privateKey;
+  private PrivateKey privateKey;
 
-  private final String wechatPayPublicKeyId;
+  private String wechatPayPublicKeyId;
 
-  private final PublicKey wechatPayPublicKey;
+  private PublicKey wechatPayPublicKey;
+
+  public TransferToUser() {
+
+  }
+
+  public TransferToUser(String mchid, String certificateSerialNo, PrivateKey privateKey, String wechatPayPublicKeyId, PublicKey wechatPayPublicKey) {
+    this.mchid = mchid;
+    this.certificateSerialNo = certificateSerialNo;
+    this.privateKey = privateKey;
+    this.wechatPayPublicKeyId = wechatPayPublicKeyId;
+    this.wechatPayPublicKey = wechatPayPublicKey;
+  }
 
   public TransferToUser(String mchid, String certificateSerialNo, String privateKeyFilePath, String wechatPayPublicKeyId, String wechatPayPublicKeyFilePath) {
     this.mchid = mchid;
@@ -126,6 +159,7 @@ public class TransferToUser {
     this.wechatPayPublicKeyId = wechatPayPublicKeyId;
     this.wechatPayPublicKey = WXPayUtility.loadPublicKeyFromPath(wechatPayPublicKeyFilePath);
   }
+
 
   public String encrypt(String plainText) {
     return WXPayUtility.encrypt(this.wechatPayPublicKey, plainText);
