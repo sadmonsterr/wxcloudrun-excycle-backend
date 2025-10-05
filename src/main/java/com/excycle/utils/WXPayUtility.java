@@ -9,6 +9,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import lombok.Data;
 import okhttp3.Headers;
 import okhttp3.Response;
 import okio.BufferedSource;
@@ -714,6 +715,7 @@ public class WXPayUtility {
         }
     }
 
+    @Data
     public static class Notification {
         @SerializedName("id")
         private String id;
@@ -728,37 +730,6 @@ public class WXPayUtility {
         @SerializedName("resource")
         private Resource resource;
         private String plaintext;
-
-        public String getId() {
-            return id;
-        }
-
-        public String getCreateTime() {
-            return createTime;
-        }
-
-        public String getEventType() {
-            return eventType;
-        }
-
-        public String getResourceType() {
-            return resourceType;
-        }
-
-        public String getSummary() {
-            return summary;
-        }
-
-        public Resource getResource() {
-            return resource;
-        }
-
-        /**
-         * 获取解密后的业务数据（JSON字符串，需要自行解析）
-         */
-        public String getPlaintext() {
-            return plaintext;
-        }
 
         private void validate() {
             if (resource == null) {

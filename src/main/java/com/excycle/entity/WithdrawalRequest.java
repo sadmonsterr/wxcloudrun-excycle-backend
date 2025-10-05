@@ -58,12 +58,6 @@ public class WithdrawalRequest implements Serializable {
     private String status;
 
     /**
-     * Related wallet transaction ID
-     */
-    @TableField("wallet_transaction_id")
-    private Long walletTransactionId;
-
-    /**
      * Third party (WeChat) order number
      */
     @TableField("third_party_order_no")

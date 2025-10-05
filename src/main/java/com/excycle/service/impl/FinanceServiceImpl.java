@@ -10,6 +10,8 @@ import com.excycle.service.FinanceService;
 import com.excycle.utils.UUIDUtils;
 import com.excycle.utils.WXPayUtility;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,50 @@ public class FinanceServiceImpl implements FinanceService {
     public FinanceServiceImpl(UserWalletMapper walletMapper, WithdrawalRequestMapper withdrawalRequestMapper) {
         this.walletMapper = walletMapper;
         this.withdrawalRequestMapper = withdrawalRequestMapper;
+    }
+
+    @Async
+    @EventListener(TransferToUser.TransferToUserResponse.class)
+    public void notifyTransferEvent(TransferToUser.TransferToUserResponse response) {
+        log.info("transfer notify {}", response);
+        try {
+            WithdrawalRequest withdrawalRequest = withdrawalRequestMapper.getByThirdPartyOrderNo(response.getTransferBillNo());
+            UserWallet wallet = getUserWallet(withdrawalRequest.getOpenId());
+            if (response.getState() == TransferToUser.TransferBillStatus.SUCCESS) {
+                // 我的钱包 冻结金额
+                wallet.setFrozenBalance(wallet.getFrozenBalance().subtract(withdrawalRequest.getAmount()));
+                wallet.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
+                walletMapper.updateById(wallet);
+
+                withdrawalRequest.setStatus(TransferToUser.TransferBillStatus.SUCCESS.name());
+                withdrawalRequest.setCompletedAt(LocalDateTime.now());
+                withdrawalRequestMapper.updateById(withdrawalRequest);
+
+            } else if (response.getState() == TransferToUser.TransferBillStatus.FAIL) {
+                wallet.setBalance(wallet.getBalance().add(withdrawalRequest.getAmount()));
+                wallet.setFrozenBalance(wallet.getFrozenBalance().subtract(withdrawalRequest.getAmount()));
+                wallet.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
+                walletMapper.updateById(wallet);
+
+                withdrawalRequest.setStatus(WithdrawalRequest.Status.FAILED.getCode());
+                withdrawalRequest.setErrorReason(response.getFailReason());
+                withdrawalRequest.setCompletedAt(LocalDateTime.now());
+                withdrawalRequestMapper.updateById(withdrawalRequest);
+            } else if (response.getState() == TransferToUser.TransferBillStatus.CANCELLED) {
+                wallet.setBalance(wallet.getBalance().add(withdrawalRequest.getAmount()));
+                wallet.setFrozenBalance(wallet.getFrozenBalance().subtract(withdrawalRequest.getAmount()));
+                wallet.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
+                walletMapper.updateById(wallet);
+
+                withdrawalRequest.setStatus(TransferToUser.TransferBillStatus.CANCELLED.name());
+                withdrawalRequest.setErrorReason(response.getFailReason());
+                withdrawalRequest.setCompletedAt(LocalDateTime.now());
+                withdrawalRequestMapper.updateById(withdrawalRequest);
+            }
+        } catch (Exception e) {
+            log.error("transfer notify error", e);
+        }
+
     }
 
     @Override
@@ -77,7 +123,6 @@ public class FinanceServiceImpl implements FinanceService {
                     .eq(UserWallet::getUserId, userId)
                     .eq(UserWallet::getVersion, wallet.getVersion());
             wallet.setBalance(wallet.getBalance().add(BigDecimal.valueOf(amount)));
-            wallet.setVersion(wallet.getVersion() + 1);
             wallet.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
             int updated = walletMapper.update(wallet, updateQueryWrapper);
             if (updated == 0) {
@@ -98,7 +143,6 @@ public class FinanceServiceImpl implements FinanceService {
                 .eq(UserWallet::getVersion, wallet.getVersion());
         wallet.setBalance(wallet.getBalance().subtract(BigDecimal.valueOf(amount)));
         wallet.setFrozenBalance(wallet.getFrozenBalance().add(BigDecimal.valueOf(amount)));
-        wallet.setVersion(wallet.getVersion() + 1);
         wallet.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
         int updated = walletMapper.update(wallet, updateQueryWrapper);
         if (updated == 0) {
@@ -120,6 +164,7 @@ public class FinanceServiceImpl implements FinanceService {
         withdrawalRequest.setThirdPartyOrderNo(response.getTransferBillNo());
         withdrawalRequestMapper.updateById(withdrawalRequest);
         Map<String, Object> result = new HashMap<>();
+        result.put("requestId", withdrawalRequest.getRequestId());
         result.put("packageInfo", response.getPackageInfo());
         return result;
     }

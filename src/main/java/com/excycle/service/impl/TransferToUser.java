@@ -146,7 +146,7 @@ public class TransferToUser {
 //    request.userName = client.encrypt("韩煜贇");
     request.transferAmount = amount;
     request.transferRemark = "二手回收货款";
-    request.notifyUrl = "https://excycle-backend-189832-5-1378998210.sh.run.tcloudbase.com/excycle/api/v1/notify/transfer";
+    request.notifyUrl = "https://excycle-backend-189832-5-1378998210.sh.run.tcloudbase.com/excycle/api/v1/notification/transfer";
     request.transferSceneId = "1010";
     request.userRecvPerception = "二手回收货款";
     request.transferSceneReportInfos = new ArrayList<>();
@@ -208,10 +208,9 @@ public class TransferToUser {
     }
   }
 
-  public TransferToUserResponse parseNotification(HttpServletRequest request, String body) {
-    WXPayUtility.Notification notification = WXPayUtility.parseNotification(apiV3Secret,
+  public WXPayUtility.Notification parseNotification(HttpServletRequest request, String body) {
+    return WXPayUtility.parseNotification(apiV3Secret,
             wechatPayPublicKeyId, wechatPayPublicKey, request, body);
-    return GsonUtil.getGson().fromJson(notification.getPlaintext(), TransferToUserResponse.class);
   }
 
   private String mchid;
@@ -303,6 +302,9 @@ public class TransferToUser {
   
     @SerializedName("package_info")
     public String packageInfo;
+
+    @SerializedName("fail_reason")
+    private String failReason;
   }
   
   public static class TransferSceneReportInfo {
