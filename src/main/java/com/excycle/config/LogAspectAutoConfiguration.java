@@ -108,7 +108,7 @@ public class LogAspectAutoConfiguration {
             return LOGGER_MAP.computeIfAbsent(className, LoggerFactory::getLogger);
         }
 
-        public void `logRequest() {
+        public void logRequest() {
             if (isDebugEnabled()) {
                 String requestJson;
                 try {
