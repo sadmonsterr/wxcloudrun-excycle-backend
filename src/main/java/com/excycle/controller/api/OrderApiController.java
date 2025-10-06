@@ -2,6 +2,7 @@ package com.excycle.controller.api;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.excycle.context.UserContext;
 import com.excycle.entity.Order;
 import com.excycle.entity.User;
 import com.excycle.enums.OrderStatus;
@@ -45,8 +46,17 @@ public class OrderApiController {
      */
     @PostMapping("/list")
     public Result<Page<OrderVO>> getOrders(@RequestBody OrderQueryRequest queryRequest, HttpServletRequest request) {
-        log.info("headers {}", Collections.list(request.getHeaderNames()));
+        queryRequest.setOpenId(UserContext.getCurrentOpenId());
         return Result.success(orderService.getOrderPage(queryRequest));
+    }
+
+    /**
+     * 根据ID获取订单
+     * GET /api/v1/orders/{id}
+     */
+    @GetMapping("/active")
+    public Result<OrderVO> getOrderById() {
+        return Result.success(orderService.getCurrentActiveOrder(UserContext.getCurrentOpenId()));
     }
 
     /**

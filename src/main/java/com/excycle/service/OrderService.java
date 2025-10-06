@@ -15,6 +15,8 @@ public interface OrderService extends IService<Order> {
 
     OrderVO getDetailById(String id);
 
+    OrderVO getCurrentActiveOrder(String openId);
+
     boolean updateOrderStatus(String id, String status);
 
     boolean addOrder(Order order);

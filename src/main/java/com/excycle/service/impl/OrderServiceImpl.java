@@ -172,6 +172,20 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return orderVO;
     }
 
+    @Override
+    public OrderVO getCurrentActiveOrder(String openId) {
+        LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<Order>()
+                .in(Order::getStatus, "IN_PROGRESS", "COLLECTED", "ASSIGNED")
+                .eq(Order::getOpenId, openId)
+                .orderByDesc(Order::getStatus)
+                .last("LIMIT 1");
+        Order order = orderMapper.selectOne(queryWrapper);
+        if (order == null) {
+            return null;
+        }
+        return convertToOrderVOBatch(Collections.singletonList(order)).get(0);
+    }
+
     private List<OrderItemsVO> convertFromItemList(List<OrderItems> orders) {
         return orders.stream()
                 .map(orderItem -> {
