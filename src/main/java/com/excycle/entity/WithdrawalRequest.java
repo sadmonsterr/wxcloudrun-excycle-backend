@@ -52,7 +52,7 @@ public class WithdrawalRequest implements Serializable {
     private BigDecimal amount;
 
     /**
-     * Status: PENDING, APPROVED, PROCESSING, COMPLETED, REJECTED, FAILED
+     * Status: SUCCESS, PENDING, APPROVED, PROCESSING, COMPLETED, REJECTED, FAILED
      */
     @TableField("status")
     private String status;
@@ -91,11 +91,13 @@ public class WithdrawalRequest implements Serializable {
      * Withdrawal request status enum
      */
     public enum Status {
+        SUCCESS("SUCCESS", "Success"),
         PENDING("PENDING", "Pending"),
         APPROVED("APPROVED", "Approved"),
         PROCESSING("PROCESSING", "Processing"),
         COMPLETED("COMPLETED", "Completed"),
         REJECTED("REJECTED", "Rejected"),
+        CANCELED("CANCELED", "Canceled"),
         FAILED("FAILED", "Failed");
 
         private final String code;
