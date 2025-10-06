@@ -81,8 +81,10 @@ public class WXPayUtility {
                 }
             })
             .create();
+
     private static final char[] SYMBOLS =
             "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
+
     private static final SecureRandom random = new SecureRandom();
 
     /**

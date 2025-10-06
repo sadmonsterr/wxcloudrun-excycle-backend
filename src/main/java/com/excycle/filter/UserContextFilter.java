@@ -36,7 +36,7 @@ public class UserContextFilter implements Filter {
             userContext.setUserId(userId);
             UserContext.setCurrent(userContext);
 
-            log.info("Set UserContext for openId: {}, userId {} ", openId, userId);
+            log.debug("Set UserContext for openId: {}, userId {} ", openId, userId);
 
             // 继续过滤器链
             chain.doFilter(request, response);

@@ -1,6 +1,7 @@
 package com.excycle.service.impl;
 
 import com.excycle.utils.WXPayUtility;
+import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import com.wechat.pay.java.core.util.GsonUtil;
 import lombok.Data;
@@ -30,25 +31,25 @@ import static com.excycle.utils.WXPayUtility.verify;
  * 发起转账
  */
 @Slf4j
-public class TransferToUser {
+public class TransferService {
 
-  private static String HOST = "https://api.mch.weixin.qq.com";
+  private static final String HOST = "https://api.mch.weixin.qq.com";
 
-  private static String METHOD = "POST";
+  private static final String METHOD = "POST";
 
-  private static String PATH = "/v3/fund-app/mch-transfer/transfer-bills";
+  private static final String PATH = "/v3/fund-app/mch-transfer/transfer-bills";
 
 //  // TODO: 请准备商户开发必要参数，参考：https://pay.weixin.qq.com/doc/v3/merchant/4013070756
 //  private static TransferToUser client = new TransferToUser(
-//          "1728813377",                    // 商户号，是由微信支付系统生成并分配给每个商户的唯一标识符，商户号获取方式参考 https://pay.weixin.qq.com/doc/v3/merchant/4013070756
-//          "151578A8CE7158F03312FD35D31AB778755C2808",         // 商户API证书序列号，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013053053
-//          "/Users/lanma/Downloads/excycle/1728813377_20251002_cert/apiclient_key.pem",     // 商户API证书私钥文件路径，本地文件路径
-//          "PUB_KEY_ID_0117288133772025100200181886000802",      // 微信支付公钥ID，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013038816
-//          "/Users/lanma/Downloads/excycle/pub_key.pem"           // 微信支付公钥文件路径，本地文件路径
+//          "",                    // 商户号，是由微信支付系统生成并分配给每个商户的唯一标识符，商户号获取方式参考 https://pay.weixin.qq.com/doc/v3/merchant/4013070756
+//          "",         // 商户API证书序列号，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013053053
+//          "/apiclient_key.pem",     // 商户API证书私钥文件路径，本地文件路径
+//          "",      // 微信支付公钥ID，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013038816
+//          "/pub_key.pem"           // 微信支付公钥文件路径，本地文件路径
 //  );
 
 
-  public static TransferToUser client;
+  public static TransferService client;
 
   static {
     String mchId = System.getenv("MCH_ID");
@@ -63,7 +64,7 @@ public class TransferToUser {
     log.info("wechatPayPublicKeyId {}", wechatPayPublicKeyId);
     log.info("wechatPayPublicKeyString {}", wechatPayPublicKeyString);
 
-    client = new TransferToUser(
+    client = new TransferService(
             mchId,                    // 商户号，是由微信支付系统生成并分配给每个商户的唯一标识符，商户号获取方式参考 https://pay.weixin.qq.com/doc/v3/merchant/4013070756
             apiClientCertificateSerialNo,         // 商户API证书序列号，如何获取请参考 https://pay.weixin.qq.com/doc/v3/merchant/4013053053
             WXPayUtility.loadPrivateKeyFromString(apiClientPrivateKeyString),     // 商户API证书私钥文件路径，本地文件路径
@@ -98,7 +99,7 @@ public class TransferToUser {
       throw new IllegalArgumentException(
               String.format("Validate notification failed, timestamp[%s] is invalid", timestamp));
     }
-    String serialNumber = "PUB_KEY_ID_0117288133772025100200181886000802";
+    String serialNumber = wechatPayPublicKeyId;
     if (!Objects.equals(serialNumber, wechatPayPublicKeyId)) {
       throw new IllegalArgumentException(
               String.format("Validate notification failed, Invalid Wechatpay-Serial, Local: %s, " +
@@ -136,6 +137,87 @@ public class TransferToUser {
     response = client.transfer(10L, "oaWBO10x5LiiFSHsXZYOd8k03lWU", "plfk2020042013");
     // TODO: 请求成功，继续业务逻辑
     System.out.println(response);
+  }
+
+  public TransferBillEntity run(GetTransferBillByOutNoRequest request) {
+    String METHOD = "GET";
+    String PATH = "/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{out_bill_no}";
+    String uri = PATH;
+    uri = uri.replace("{out_bill_no}", WXPayUtility.urlEncode(request.outBillNo));
+
+    Request.Builder reqBuilder = new Request.Builder().url(HOST + uri);
+    reqBuilder.addHeader("Accept", "application/json");
+    reqBuilder.addHeader("Wechatpay-Serial", wechatPayPublicKeyId);
+    reqBuilder.addHeader("Authorization", WXPayUtility.buildAuthorization(mchid, certificateSerialNo, privateKey, METHOD, uri, null));
+    reqBuilder.method(METHOD, null);
+    Request httpRequest = reqBuilder.build();
+    log.info("wechat request{}", uri);
+    long start = System.currentTimeMillis();
+
+    // 发送HTTP请求
+    OkHttpClient client = new OkHttpClient.Builder().build();
+    try (Response httpResponse = client.newCall(httpRequest).execute()) {
+      String respBody = WXPayUtility.extractBody(httpResponse);
+      if (httpResponse.code() >= 200 && httpResponse.code() < 300) {
+        // 2XX 成功，验证应答签名
+        WXPayUtility.validateResponse(this.wechatPayPublicKeyId, this.wechatPayPublicKey,
+                httpResponse.headers(), respBody);
+
+        // 从HTTP应答报文构建返回数据
+        return WXPayUtility.fromJson(respBody, TransferBillEntity.class);
+      } else {
+        throw new WXPayUtility.ApiException(httpResponse.code(), respBody, httpResponse.headers());
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException("Sending request to " + uri + " failed.", e);
+    } finally {
+      log.info("wechat response {} cost {}ms", uri, System.currentTimeMillis() - start);
+    }
+  }
+
+  public static class GetTransferBillByOutNoRequest {
+    @SerializedName("out_bill_no")
+    @Expose(serialize = false)
+    public String outBillNo;
+  }
+
+  @Data
+  public static class TransferBillEntity {
+    @SerializedName("mch_id")
+    public String mchId;
+
+    @SerializedName("out_bill_no")
+    public String outBillNo;
+
+    @SerializedName("transfer_bill_no")
+    public String transferBillNo;
+
+    @SerializedName("appid")
+    public String appid;
+
+    @SerializedName("state")
+    public TransferBillStatus state;
+
+    @SerializedName("transfer_amount")
+    public Long transferAmount;
+
+    @SerializedName("transfer_remark")
+    public String transferRemark;
+
+    @SerializedName("fail_reason")
+    public String failReason;
+
+    @SerializedName("openid")
+    public String openid;
+
+    @SerializedName("user_name")
+    public String userName;
+
+    @SerializedName("create_time")
+    public String createTime;
+
+    @SerializedName("update_time")
+    public String updateTime;
   }
 
   public TransferToUserResponse transfer(Long amount, String openid, String outBillNo) {
@@ -225,11 +307,11 @@ public class TransferToUser {
 
   private String apiV3Secret;
 
-  public TransferToUser() {
+  public TransferService() {
 
   }
 
-  public TransferToUser(String mchid, String certificateSerialNo, PrivateKey privateKey, String wechatPayPublicKeyId, PublicKey wechatPayPublicKey, String apiV3Secret) {
+  public TransferService(String mchid, String certificateSerialNo, PrivateKey privateKey, String wechatPayPublicKeyId, PublicKey wechatPayPublicKey, String apiV3Secret) {
     this.mchid = mchid;
     this.certificateSerialNo = certificateSerialNo;
     this.privateKey = privateKey;
@@ -238,8 +320,8 @@ public class TransferToUser {
     this.apiV3Secret = apiV3Secret;
   }
 
-  public TransferToUser(String mchid, String certificateSerialNo, String privateKeyFilePath, String wechatPayPublicKeyId, String wechatPayPublicKeyFilePath,
-                        String apiV3Secret) {
+  public TransferService(String mchid, String certificateSerialNo, String privateKeyFilePath, String wechatPayPublicKeyId, String wechatPayPublicKeyFilePath,
+                         String apiV3Secret) {
     this.mchid = mchid;
     this.certificateSerialNo = certificateSerialNo;
     this.privateKey = WXPayUtility.loadPrivateKeyFromPath(privateKeyFilePath);

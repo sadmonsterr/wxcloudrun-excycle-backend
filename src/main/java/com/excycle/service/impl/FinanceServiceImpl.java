@@ -8,7 +8,6 @@ import com.excycle.mapper.UserWalletMapper;
 import com.excycle.mapper.WithdrawalRequestMapper;
 import com.excycle.service.FinanceService;
 import com.excycle.utils.UUIDUtils;
-import com.excycle.utils.WXPayUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -21,7 +20,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.excycle.service.impl.TransferToUser.client;
+import static com.excycle.service.impl.TransferService.client;
 
 @Slf4j
 @Service
@@ -37,23 +36,23 @@ public class FinanceServiceImpl implements FinanceService {
     }
 
     @Async
-    @EventListener(TransferToUser.TransferToUserResponse.class)
-    public void notifyTransferEvent(TransferToUser.TransferToUserResponse response) {
+    @EventListener(TransferService.TransferToUserResponse.class)
+    public void notifyTransferEvent(TransferService.TransferToUserResponse response) {
         log.info("transfer notify {}", response);
         try {
             WithdrawalRequest withdrawalRequest = withdrawalRequestMapper.getByThirdPartyOrderNo(response.getTransferBillNo());
             UserWallet wallet = getUserWallet(withdrawalRequest.getOpenId());
-            if (response.getState() == TransferToUser.TransferBillStatus.SUCCESS) {
+            if (response.getState() == TransferService.TransferBillStatus.SUCCESS) {
                 // 我的钱包 冻结金额
                 wallet.setFrozenBalance(wallet.getFrozenBalance().subtract(withdrawalRequest.getAmount()));
                 wallet.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
                 walletMapper.updateById(wallet);
 
-                withdrawalRequest.setStatus(TransferToUser.TransferBillStatus.SUCCESS.name());
+                withdrawalRequest.setStatus(TransferService.TransferBillStatus.SUCCESS.name());
                 withdrawalRequest.setCompletedAt(LocalDateTime.now());
                 withdrawalRequestMapper.updateById(withdrawalRequest);
 
-            } else if (response.getState() == TransferToUser.TransferBillStatus.FAIL) {
+            } else if (response.getState() == TransferService.TransferBillStatus.FAIL) {
                 wallet.setBalance(wallet.getBalance().add(withdrawalRequest.getAmount()));
                 wallet.setFrozenBalance(wallet.getFrozenBalance().subtract(withdrawalRequest.getAmount()));
                 wallet.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
@@ -63,13 +62,13 @@ public class FinanceServiceImpl implements FinanceService {
                 withdrawalRequest.setErrorReason(response.getFailReason());
                 withdrawalRequest.setCompletedAt(LocalDateTime.now());
                 withdrawalRequestMapper.updateById(withdrawalRequest);
-            } else if (response.getState() == TransferToUser.TransferBillStatus.CANCELLED) {
+            } else if (response.getState() == TransferService.TransferBillStatus.CANCELLED) {
                 wallet.setBalance(wallet.getBalance().add(withdrawalRequest.getAmount()));
                 wallet.setFrozenBalance(wallet.getFrozenBalance().subtract(withdrawalRequest.getAmount()));
                 wallet.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
                 walletMapper.updateById(wallet);
 
-                withdrawalRequest.setStatus(TransferToUser.TransferBillStatus.CANCELLED.name());
+                withdrawalRequest.setStatus(TransferService.TransferBillStatus.CANCELLED.name());
                 withdrawalRequest.setErrorReason(response.getFailReason());
                 withdrawalRequest.setCompletedAt(LocalDateTime.now());
                 withdrawalRequestMapper.updateById(withdrawalRequest);
@@ -158,10 +157,11 @@ public class FinanceServiceImpl implements FinanceService {
                 .setUpdatedAt(LocalDateTime.now());
         withdrawalRequestMapper.insert(withdrawalRequest);
 
-        TransferToUser.TransferToUserResponse response = client.transfer(BigDecimal.valueOf(amount).multiply(BigDecimal.valueOf(100)).longValue(),
+        TransferService.TransferToUserResponse response = client.transfer(BigDecimal.valueOf(amount).multiply(BigDecimal.valueOf(100)).longValue(),
                 UserContext.getCurrentOpenId(), withdrawalRequest.getRequestId());
 
         withdrawalRequest.setThirdPartyOrderNo(response.getTransferBillNo());
+        withdrawalRequest.setStatus(response.getState().name());
         withdrawalRequestMapper.updateById(withdrawalRequest);
         Map<String, Object> result = new HashMap<>();
         result.put("requestId", withdrawalRequest.getRequestId());

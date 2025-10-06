@@ -116,11 +116,7 @@ public class UserItemApiController {
     @PostMapping
     public Result<String> createUserItem(@RequestBody UserItem userItem) {
         boolean success = userItemService.saveUserItem(userItem);
-        if (success) {
-            return Result.success("用户物品创建成功", userItem.getId());
-        } else {
-            return Result.error("用户物品创建失败");
-        }
+        return Result.success( userItem.getId());
     }
 
     /**
@@ -131,11 +127,7 @@ public class UserItemApiController {
     public Result<String> updateUserItem(@PathVariable String id, @RequestBody UserItem userItem) {
         userItem.setId(id);
         boolean success = userItemService.updateUserItem(userItem);
-        if (success) {
-            return Result.success("用户物品更新成功", id);
-        } else {
-            return Result.error("用户物品更新失败");
-        }
+        return Result.success("用户物品更新成功", id);
     }
 
     /**
@@ -148,12 +140,8 @@ public class UserItemApiController {
             @PathVariable String itemId,
             @RequestBody UserItemPriceUpdateRequest request) {
         boolean success = userItemService.updateUserItemPrice(userId, itemId, request.getPrice());
-        if (success) {
-            UserItem userItem = userItemService.getUserItemByUserAndItem(userId, itemId);
-            return Result.success("价格更新成功", userItem.getId());
-        } else {
-            return Result.error("价格更新失败");
-        }
+        UserItem userItem = userItemService.getUserItemByUserAndItem(userId, itemId);
+        return Result.success("价格更新成功", userItem.getId());
     }
 
     /**
