@@ -16,10 +16,12 @@ import com.excycle.entity.FileInfo;
 import com.excycle.entity.Order;
 import com.excycle.entity.OrderItems;
 import com.excycle.entity.User;
+import com.excycle.entity.UserShopRole;
 import com.excycle.enums.OrderStatus;
 import com.excycle.mapper.OrderItemsMapper;
 import com.excycle.mapper.OrderMapper;
 import com.excycle.mapper.UserMapper;
+import com.excycle.mapper.UserShopRoleMapper;
 import com.excycle.service.CloudBaseService;
 import com.excycle.service.FinanceService;
 import com.excycle.service.OrderService;
@@ -33,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.excycle.enums.OrderStatus.WAITING;
@@ -53,6 +56,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     @Autowired
     private CloudBaseService cloudBaseService;
+
+    @Autowired
+    private UserShopRoleMapper userShopRoleMapper;
 
     // TODO dynamic load
     private static final Map<String, String> ITEM_NAME_BY_ID = Collections.unmodifiableMap(new HashMap<String, String>() {{
@@ -168,6 +174,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .sum();
         orderVO.setTotalQuantity(totalQuantity);
         FileInfo orderImage = cloudBaseService.getTempFileURL(order.getOrderImages());
+        Optional.ofNullable(order.getDriverImages())
+                .map(images -> cloudBaseService.getTempFileURL(images))
+                .ifPresent(orderVO::setDriverImage);
         orderVO.setOrderImage(orderImage);
         return orderVO;
     }
@@ -218,6 +227,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 || OrderStatus.CANCELLED.getKey().equals(currentOrder.getStatus())) {
             throw new IllegalStateException("订单状态异常，不能更新");
         }
+        UserShopRole userShopRole = userShopRoleMapper.getByUserId(currentOrder.getUserId());
+        if (userShopRole == null) {
+            throw new IllegalStateException("用户未绑定商铺");
+        }
+        order.setShopId(userShopRole.getShopId());
         if ( WAITING.getKey().equals(currentOrder.getStatus()) && order.getDriverId() != null) {
             order.setStatus(OrderStatus.ASSIGNED.getKey());
         }
@@ -226,7 +240,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             financeService.transfer(currentOrder.getUserId(), currentOrder.getOpenId(), currentOrder.getTotalPrice());
             order.setStatus(OrderStatus.COMPLETED.getKey());
         }
-
         return updateById(order);
 
     }

@@ -49,6 +49,10 @@ public class OrderVO {
 
     private String driverName;
 
+    private String driverImages;
+
+    private FileInfo driverImage;
+
     private Double totalPrice;
 
     private Integer totalQuantity;

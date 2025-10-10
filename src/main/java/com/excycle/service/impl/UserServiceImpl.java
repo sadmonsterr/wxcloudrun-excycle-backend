@@ -3,6 +3,7 @@ package com.excycle.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.excycle.common.Result;
 import com.excycle.context.UserContext;
 import com.excycle.entity.Address;
 import com.excycle.entity.User;
@@ -10,9 +11,14 @@ import com.excycle.entity.UserWallet;
 import com.excycle.mapper.AddressMapper;
 import com.excycle.mapper.UserMapper;
 import com.excycle.service.FinanceService;
+import com.excycle.service.RoleService;
 import com.excycle.service.UserService;
 import com.excycle.dto.UserRegisterRequest;
+import com.excycle.service.UserShopRoleService;
 import com.excycle.vo.AddressVO;
+import com.excycle.vo.RoleVO;
+import com.excycle.vo.ShopRoleVO;
+import com.excycle.vo.UserShopRoleVO;
 import com.excycle.vo.UserVO;
 import com.excycle.utils.UUIDUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -21,6 +27,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -33,14 +42,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final FinanceService financeService;
 
-    public UserServiceImpl(UserMapper userMapper, AddressMapper addressMapper, FinanceService financeService) {
+    private final RoleService roleService;
+
+    private final UserShopRoleService userShopRoleService;
+
+    public UserServiceImpl(UserMapper userMapper, AddressMapper addressMapper, FinanceService financeService, RoleService roleService, UserShopRoleService userShopRoleService) {
         this.userMapper = userMapper;
         this.addressMapper = addressMapper;
         this.financeService = financeService;
+        this.roleService = roleService;
+        this.userShopRoleService = userShopRoleService;
     }
 
     @Override
-    public Page<User> getUserPage(Page<User> page, User user) {
+    public Page<UserVO> getUserPage(Page<User> page, User user) {
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
 
         if (user.getPhone() != null && !user.getPhone().isEmpty()) {
@@ -53,16 +68,37 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         queryWrapper.orderByDesc(User::getCreatedAt);
 
-        return baseMapper.selectPage(page, queryWrapper);
+        Page<User> userPage = baseMapper.selectPage(page, queryWrapper);
+        // 转换为VO
+        Page<UserVO> userVOPage = new Page<>();
+        userVOPage.setCurrent(userPage.getCurrent());
+        userVOPage.setSize(userPage.getSize());
+        userVOPage.setTotal(userPage.getTotal());
+        userVOPage.setRecords(userPage.getRecords().stream().map(this::convertToUserVO).collect(Collectors.toList()));
+        return userVOPage;
     }
 
     @Override
-    public Page<User> getDriverUserPage(Page<User> page, String searchWord) {
+    public Page<UserVO> getDriverUserPage(Page<User> page, String searchWord) {
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<User>()
+                .eq(User::getRole, "driver")
                 .nested(StringUtils.isNotBlank(searchWord), nested -> nested.like(User::getName, searchWord).or()
                         .like(User::getPhone, searchWord));
         queryWrapper.orderByDesc(User::getCreatedAt);
-        return baseMapper.selectPage(page, queryWrapper);
+        Page<User> driverUserPage = baseMapper.selectPage(page, queryWrapper);
+        Page<UserVO> userVOPage = new Page<>();
+        userVOPage.setCurrent(driverUserPage.getCurrent());
+        userVOPage.setSize(driverUserPage.getSize());
+        userVOPage.setTotal(driverUserPage.getTotal());
+        userVOPage.setRecords(driverUserPage.getRecords().stream().map(this::convertToSimpleDriverUserVO).collect(Collectors.toList()));
+        return userVOPage;
+    }
+
+    private UserVO convertToSimpleDriverUserVO(User user) {
+        UserVO userVO = new UserVO();
+        userVO.setId(user.getId());
+        userVO.setName(String.format("%s(%s)", user.getName(), user.getPhone()));
+        return userVO;
     }
 
     @Override
@@ -81,9 +117,34 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    public UserVO getById(String userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            return null;
+        }
+        UserVO userVO = convertToUserVO(user);
+        userVO.setShopRoles(getUserShopRoles(user.getId()));
+        return userVO;
+    }
+
+    @Override
     public UserVO getByOpenId(String openId) {
         User user = userMapper.selectByOpenId(openId);
-        return user == null ? null :convertToUserVO(user);
+        if (user == null) {
+            return null;
+        }
+        UserVO userVO = convertToUserVO(user);
+        userVO.setShopRoles(getUserShopRoles(user.getId()));
+        return userVO;
+    }
+
+    private List<ShopRoleVO> getUserShopRoles(String userId) {
+        List<UserShopRoleVO> shopRoles = userShopRoleService.getUserShopRolesByUserId(userId);
+        return shopRoles.stream().map(shopRole -> {
+            ShopRoleVO shopRoleVO = new ShopRoleVO();
+            BeanUtils.copyProperties(shopRole, shopRoleVO);
+            return shopRoleVO;
+        }).collect(Collectors.toList());
     }
 
     @Override
@@ -105,6 +166,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private UserVO convertToUserVO(User user) {
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
+        Optional.ofNullable(roleService.getRoleById(user.getRole()))
+                .ifPresent(roleVO -> userVO.setRoleName(roleVO.getName()));
         return userVO;
     }
 

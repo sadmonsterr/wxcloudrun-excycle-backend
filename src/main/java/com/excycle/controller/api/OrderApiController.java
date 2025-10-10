@@ -45,8 +45,7 @@ public class OrderApiController {
      * POST /api/v1/orders/list
      */
     @PostMapping("/list")
-    public Result<Page<OrderVO>> getOrders(@RequestBody OrderQueryRequest queryRequest, HttpServletRequest request) {
-        queryRequest.setOpenId(UserContext.getCurrentOpenId());
+    public Result<Page<OrderVO>> getOrders(@RequestBody OrderQueryRequest queryRequest) {
         return Result.success(orderService.getOrderPage(queryRequest));
     }
 
@@ -74,8 +73,8 @@ public class OrderApiController {
      */
     @PostMapping
     public Result<String> createOrder(@Validated @RequestBody CreateOrderRequest createOrderRequest, HttpServletRequest request) {
-        String openId = request.getHeader("x-wx-openid");
-        createOrderRequest.setOpenId(openId);
+        createOrderRequest.setOpenId(UserContext.getCurrentOpenId());
+        createOrderRequest.setUserId(UserContext.getCurrentUserId());
         Order order = orderService.createOrderWithItems(createOrderRequest);
         return Result.success("订单创建成功", order.getId());
     }

@@ -48,7 +48,12 @@ public class Order {
 
     private String driverId;
 
+    private String driverImages;
+
     private Double totalPrice;
+
+    @TableField(value = "shop_id")
+    private String shopId;
 
     @TableField("createdAt")
     @JsonSerialize(using = TimestampSerializer.class)

@@ -40,20 +40,11 @@ public class UserApiController {
      */
     @PostMapping("/list")
     public Result<Page<UserVO>> getUsers(@RequestBody UserQueryRequest request) {
-
         User queryUser = new User();
         if (request.getName() != null) queryUser.setName(request.getName());
         if (request.getPhone() != null) queryUser.setPhone(request.getPhone());
         if (request.getRole() != null) queryUser.setRole(request.getRole());
-
-        Page<User> userPage = userService.getUserPage(new Page<>(request.getPage(), request.getSize()), queryUser);
-        // 转换为VO
-        Page<UserVO> userVOPage = new Page<>();
-        userVOPage.setCurrent(userPage.getCurrent());
-        userVOPage.setSize(userPage.getSize());
-        userVOPage.setTotal(userPage.getTotal());
-        userVOPage.setRecords(userPage.getRecords().stream().map(this::convertToUserVO).collect(Collectors.toList()));
-        return Result.success(userVOPage);
+        return Result.success(userService.getUserPage(new Page<>(request.getPage(), request.getSize()), queryUser));
     }
 
     @GetMapping("driver")
@@ -61,22 +52,9 @@ public class UserApiController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "100") int size,
             @RequestParam(required = false) String search) {
-        Page<User> userPage = userService.getDriverUserPage(new Page<>(page, size), search);
-        // 转换为VO
-        Page<UserVO> userVOPage = new Page<>();
-        userVOPage.setCurrent(userPage.getCurrent());
-        userVOPage.setSize(userPage.getSize());
-        userVOPage.setTotal(userPage.getTotal());
-        userVOPage.setRecords(userPage.getRecords().stream().map(this::convertToSimpleDriverUserVO).collect(Collectors.toList()));
-        return Result.success(userVOPage);
+        return Result.success(userService.getDriverUserPage(new Page<>(page, size), search));
     }
 
-    private UserVO convertToSimpleDriverUserVO(User user) {
-        UserVO userVO = new UserVO();
-        userVO.setId(user.getId());
-        userVO.setName(String.format("%s(%s)", user.getName(), user.getPhone()));
-        return userVO;
-    }
     private UserVO convertToUserVO(User user) {
         UserVO userVO = new UserVO();
         userVO.setId(user.getId());
@@ -97,12 +75,8 @@ public class UserApiController {
      */
     @GetMapping("/{id}")
     public Result<UserVO> getUserById(@PathVariable String id) {
-        User user = userService.getById(id);
-        if (user != null) {
-            return Result.success(convertToUserVO(user));
-        } else {
-            return Result.error("用户不存在");
-        }
+        UserVO user = userService.getById(id);
+        return Result.success(user);
     }
 
     /**

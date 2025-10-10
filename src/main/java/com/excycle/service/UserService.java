@@ -12,15 +12,17 @@ import java.util.List;
 
 public interface UserService extends IService<User> {
 
-    Page<User> getUserPage(Page<User> page, User user);
+    Page<UserVO> getUserPage(Page<User> page, User user);
 
-    Page<User> getDriverUserPage(Page<User> page, String searchWord);
+    Page<UserVO> getDriverUserPage(Page<User> page, String searchWord);
 
     boolean addUser(User user);
 
     boolean updateUser(User user);
 
     boolean deleteUser(Long id);
+
+    UserVO getById(String userId);
 
     UserVO getByOpenId(String openId);
 

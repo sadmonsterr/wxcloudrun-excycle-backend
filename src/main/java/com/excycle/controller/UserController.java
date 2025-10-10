@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.excycle.entity.User;
 import com.excycle.service.UserService;
 import com.excycle.common.Result;
+import com.excycle.vo.UserVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -25,7 +26,7 @@ public class UserController {
                            @RequestParam(defaultValue = "10") Integer pageSize,
                            User user, Model model) {
         Page<User> page = new Page<>(pageNum, pageSize);
-        Page<User> userPage = userService.getUserPage(page, user);
+        Page<UserVO> userPage = userService.getUserPage(page, user);
 
         model.addAttribute("userPage", userPage);
         model.addAttribute("user", user);
@@ -43,7 +44,7 @@ public class UserController {
 
     @GetMapping("/edit/{id}")
     public String editUserPage(@PathVariable String id, Model model) {
-        User user = userService.getById(id);
+        UserVO user = userService.getById(id);
         model.addAttribute("user", user);
         return "user/edit";
     }

@@ -4,6 +4,8 @@ import com.excycle.config.TimestampSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class UserVO {
 
@@ -19,6 +21,8 @@ public class UserVO {
 
     private String role;
 
+    private String roleName;
+
     private String businessLicense;
 
     @JsonSerialize(using = TimestampSerializer.class)
@@ -28,4 +32,6 @@ public class UserVO {
     private Long updatedAt;
 
     private String openId;
+
+    private List<ShopRoleVO> shopRoles;
 }
