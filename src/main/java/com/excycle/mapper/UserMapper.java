@@ -32,4 +32,5 @@ public interface UserMapper extends BaseMapper<User> {
         queryWrapper.eq(User::getOpenId, openId);
         return selectOne(queryWrapper);
     }
+
 }

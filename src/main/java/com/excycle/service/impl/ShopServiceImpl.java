@@ -42,7 +42,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
     @Override
     public ShopVO getShopById(String id) {
-        Shop shop = getById(id);
+        Shop shop = getBaseMapper().getByShopId(id);
         return shop != null ? convertToVO(shop) : null;
     }
 
@@ -60,7 +60,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
     @Override
     public ShopVO updateShop(String id, ShopDTO shopDTO) {
-        Shop shop = getById(id);
+        Shop shop = baseMapper.getByShopId(id);
         if (shop == null) {
             return null;
         }
@@ -71,7 +71,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
     @Override
     public boolean deleteShop(String id) {
-        Shop shop = getById(id);
+        Shop shop = getBaseMapper().getByShopId(id);
         if (shop != null) {
             shop.setDeleted(1L);
             return updateById(shop);

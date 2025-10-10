@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -225,19 +226,20 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         Order currentOrder = getById(order.getId());
         if ( OrderStatus.COMPLETED.getKey().equals(currentOrder.getStatus()) || OrderStatus.TRANSFERRING.getKey().equals(currentOrder.getStatus())
                 || OrderStatus.CANCELLED.getKey().equals(currentOrder.getStatus())) {
-            throw new IllegalStateException("订单状态异常，不能更新");
+            throw new IllegalStateException("订单已结束");
         }
         UserShopRole userShopRole = userShopRoleMapper.getByUserId(currentOrder.getUserId());
-        if (userShopRole == null) {
-            throw new IllegalStateException("用户未绑定商铺");
-        }
+        Assert.notNull(userShopRole, "用户未绑定商铺");
         order.setShopId(userShopRole.getShopId());
         if ( WAITING.getKey().equals(currentOrder.getStatus()) && order.getDriverId() != null) {
             order.setStatus(OrderStatus.ASSIGNED.getKey());
         }
         if ( OrderStatus.COLLECTED.getKey().equals(currentOrder.getStatus()) &&
                 OrderStatus.TRANSFERRING.getKey().equals(order.getStatus())) {
-            financeService.transfer(currentOrder.getUserId(), currentOrder.getOpenId(), currentOrder.getTotalPrice());
+            UserShopRole shopBossUser = userShopRoleMapper.getByShopBoss(currentOrder.getShopId());
+            Assert.notNull(shopBossUser, "商铺未绑定老板");
+            User bossUser = userMapper.selectById(shopBossUser.getUserId());
+            financeService.transfer(bossUser.getId(), bossUser.getOpenId(), currentOrder.getTotalPrice());
             order.setStatus(OrderStatus.COMPLETED.getKey());
         }
         return updateById(order);

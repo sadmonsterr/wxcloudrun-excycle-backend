@@ -118,12 +118,7 @@ public class UserShopRoleServiceImpl extends ServiceImpl<UserShopRoleMapper, Use
 
     @Override
     public boolean deleteUserShopRole(String id) {
-        UserShopRole userShopRole = getById(id);
-        if (userShopRole != null) {
-            userShopRole.setDeleted(1L);
-            return updateById(userShopRole);
-        }
-        return false;
+        return getBaseMapper().deleteById(id, System.currentTimeMillis());
     }
 
     @Override
