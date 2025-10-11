@@ -82,7 +82,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .eq(StringUtils.isNotBlank(request.getStatus()), Order::getStatus, request.getStatus())
                 .eq(StringUtils.isNotBlank(request.getOpenId()), Order::getOpenId, request.getOpenId())
                 .eq(StringUtils.isNotBlank(request.getDriverId()), Order::getDriverId, request.getDriverId())
-                .orderByDesc(Order::getId);
+                .orderByDesc(Order::getCreatedAt);
         Page<Order> orderPage = orderMapper.selectPage(page, queryWrapper);
         // 转换为VO
         Page<OrderVO> orderVOPage = new Page<>();
