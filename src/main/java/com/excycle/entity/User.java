@@ -2,6 +2,7 @@ package com.excycle.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.excycle.config.TimestampSerializer;
@@ -39,4 +40,7 @@ public class User {
 
     @TableField(value = "_openid")
     private String openId;
+
+    @TableLogic
+    private Long deleted;
 }

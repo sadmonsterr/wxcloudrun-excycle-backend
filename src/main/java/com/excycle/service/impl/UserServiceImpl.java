@@ -112,7 +112,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public boolean deleteUser(Long id) {
+    public boolean deleteUser(String id) {
         return removeById(id);
     }
 

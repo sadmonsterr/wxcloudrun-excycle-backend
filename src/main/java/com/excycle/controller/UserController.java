@@ -73,7 +73,7 @@ public class UserController {
 
     @DeleteMapping("/delete/{id}")
     @ResponseBody
-    public Result<String> deleteUser(@PathVariable Long id) {
+    public Result<String> deleteUser(@PathVariable String id) {
         boolean success = userService.deleteUser(id);
         if (success) {
             return Result.success("用户删除成功");

@@ -20,7 +20,7 @@ public interface UserService extends IService<User> {
 
     boolean updateUser(User user);
 
-    boolean deleteUser(Long id);
+    boolean deleteUser(String id);
 
     UserVO getById(String userId);
 

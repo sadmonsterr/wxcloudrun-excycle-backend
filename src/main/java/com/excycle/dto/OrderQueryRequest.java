@@ -16,4 +16,6 @@ public class OrderQueryRequest {
     private String driverId;
 
     private String openId;
+
+    private String userId;
 }
